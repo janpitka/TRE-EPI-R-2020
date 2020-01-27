@@ -1,0 +1,25 @@
+---
+title: "Statistical Methods in Cancer Epidemiology using R"
+author: "Janne Pitkäniemi and Karri Seppä"
+date: "Tampere University, Faculty of Social Sciences  Feb 10 - Mar 30,  2020"
+institute: "Finnish Cancer Registry, Finland,   
+ janne.pitkaniemi@cancer.fi>,karri.seppa@cancer.fi"
+output: beamer_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Course dates and contents
+
+\begin{table}[]
+\begin{tabular}{rl} \hline
+10.2.2020 & Basic tabulations using R and analysis of proportions (JP) \\[0.3cm]
+17.2.2020 & Analysis of proportions and case-control studies (JP)      \\[0.3cm] 
+2.3.2020  & Analysis of rates (KS)                                     \\[0.3cm]
+9.3.2020  & More than one time scale and SIR, SMR (KS)                 \\[0.3cm]
+23.3.2020 & Population-based cancer survival (KS)                      \\[0.3cm] 
+30.3.2020 & Long-term survival (JP) \\ \hline                         
+\end{tabular}
+\end{table}
