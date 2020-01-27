@@ -1,0 +1,21 @@
+\frametitle{6. Calculation of SMR}
+\ \\
+We can sum either over individual time slots:
+\verb|  > D <- sum(nickLew.ap$d_iap)| \\
+\verb|  > E <- sum(nickLew.ap$e_iap)|
+
+or over the newly formed tables:\\
+\verb|  > D <- sum(Obs.lung, na.rm=T)| \\
+\verb|  > E <- sum(Exp.lung, na.rm=T)|
+
+\medskip
+Either way, the calculation proceeds:
+\small
+\begin{verbatim}
+> SMR <- D/E; SE <- 1/sqrt(D); EF <- exp(1.96*SE)
+> round(c(D, E, SMR, SMR/EF, SMR*EF), 2)
+[1] 137.00  26.62   5.15   4.35   6.08
+\end{verbatim}
+SMR = 5.15 [95\% CI 4.35 to 6.08] \\
+$\Rightarrow$
+substantial excess risk of lung cancer in smelter workers.

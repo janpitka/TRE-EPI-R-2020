@@ -1,0 +1,375 @@
+---
+title: 'Epidemiologic data analysis using R '
+author:
+- Faculty of Social Sciences, University of Tampere
+- ' -- '
+- Janne Pitkaniemi
+date: "`r format(Sys.time(), '%d.%m.%Y')`"
+output:
+  word_document: default
+  pdf_document: default
+subtitle: Practicals 9
+---
+
+
+```{r p9_0, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, comment = NA)
+setwd("C:/Users/janne.pitkaniemi/Projects/TRE2018")
+```
+
+```{r p9_1,eval=TRUE, echo=TRUE,comment=NA}
+library(Epi)
+library(mstate)
+library(survival)
+library(lubridate)
+```
+
+
+#Survival analysis: Oral cancer patients
+
+
+## Description of the data
+
+
+File \verb|oralca2.txt|, that you may
+access from a url address to be given in the practical,
+contains data from 338
+patients having an oral squamous cell carcinoma diagnosed and treated
+in one tertiary level oncological clinic in Finland since 1985, followed-up
+for mortality until 31 December 2008.
+The dataset contains the following variables:
+
+\medskip
+\begin{tabular}{lcl}
+{\tt sex}         &=& sex, a factor with categories
+    \verb|1 = "Female", 2 = "Male"|,    \\
+{\tt age}         &=& age (years) at the date of diagnosing the cancer,  \\
+% loc  &-& location of the tumour (factor):
+% \verb|1 = " Other", 2 = " Tung"|, \\
+{\tt stage}       &=& TNM stage of the tumour (factor): \verb|1 = "I", ..., 4 = "IV", 5 = "unkn"|, \\
+{\tt time}       &=& follow-up time (in years) since diagnosis until death or censoring,\\
+{\tt event}      &=& event ending the follow-up (numeric): \\
+{ }         & & 0 = censoring alive, 1 = death from oral cancer, 2 = death from other causes. \\
+\end{tabular}
+
+
+## Loading the packages and the data
+
+
+Load the R packages \texttt{Epi, mstate}, and \texttt{survival} needed in this exercise.
+
+Read the datafile {\tt oralca2.txt} from a website, whose precise address  will be given in the practical, into an R data frame named \texttt{orca}. 
+
+Look at the head, structure and the summary of the data frame. Using function \texttt{table()} count the numbers of censorings as well as deaths from oral cancer and other causes, respectively, from the \texttt{event} variable.
+
+```{r p9_2, eval=TRUE,echo=TRUE,warnings=FALSE}
+orca <- 
+  read.csv("C:/Users/janne.pitkaniemi/Projects/TRE2018/oralca2.txt", 
+           sep="")
+head(orca)
+
+```
+
+## Estimate cumulative incidence using competing risks
+
+1. Use KM-estimator for oral cancer and other deaths separately and estimate
+5 year mortality 
+
+```{r p9_3a, eval=TRUE,echo=TRUE,warnings=FALSE}
+orca$suob <- Surv(orca$time, 1*(orca$event > 0) )
+km1 <- survfit( suob ~ 1, data = orca)
+par(mfcol=c(3,1))
+plot(km1,main="Survival (S,KM)",xlab="time",ylab="Proportion")
+plot(c(0,25),c(0,1),main="1-S (F,KM)",xlab="time",ylab="Proportion",pch="")
+lines(km1$time,1-km1$surv,type="s")
+lines(km1$time,1-km1$upper,type="s",lty=2)
+lines(km1$time,1-km1$lower,type="s",lty=2)
+plot(km1,main="Cumulative hazard",xlab="time",ylab="Cumulative hazard",fun="cumhaz")
+```
+
+
+```{r p9_3b, eval=TRUE,echo=TRUE,warnings=FALSE}
+km1<- survfit( Surv( time, 1*(event==1)) ~ 1,
+                 data = orca)
+res<-summary(km1)
+index<-which(floor(res$time)==5)[1]-1
+
+cat("Probablity of dying to oral cancer before 5th year and 95%CI",
+    1-res$surv[index],"(",
+    1-res$lower[index],";",
+    1-res$upper[index],") \n" )
+
+```
+
+```{r p9_4, eval=TRUE,echo=TRUE,warnings=FALSE}
+km1<- survfit( Surv( time, 1*(event==2)) ~ 1,
+                 data = orca)
+res<-summary(km1)
+index<-which(floor(res$time)==5)[1]-1
+
+cat("Probablity of dying to oral cancer before 5th year and 95%CI",
+    1-res$surv[index],"(",
+    1-res$lower[index],";",
+    1-res$upper[index],") \n" )
+
+```
+
+
+## Estimate cumulative incidence using competing risks
+
+1. Type help(plotCIF) and look at the help of plotting AJ-estimator for CIF. Then plot CIF for oral cancer data for deaths due to cancer and other causes.
+
+```{r p9_5, eval=TRUE,echo=TRUE,warnings=FALSE}
+par(mfrow=c(1,2))
+cif<- survfit( Surv( time, event, type="mstate") ~ 1,
+                 data = orca)
+ plotCIF(cif, 1, main = "Oral cancer death",
+    col=1, ylim = c(0, 0.7) )
+ plotCIF(cif, 2, main= "Other death",
+    col=1, ylim = c(0, 0.7) )
+```
+
+Print summary of cif and find 5-year CIF for oral and other cause death
+
+```{r p9_6, eval=TRUE,echo=TRUE,warnings=FALSE}
+
+res<-summary(cif)
+index<-which(floor(res$time)==5)[1]-1
+probs<-res$pstate[index,]
+
+cat("Probablity of dying to oral cancer before 5th year and 95%CI",
+    probs[1],"(",
+    res$lower[index,1],";",
+    res$upper[index,1],") \n" )
+cat("Probablity of dying to other causes before 5th year and 95%CI",
+    probs[2],"(",
+    res$lower[index,2],";",
+    res$upper[index,2],")" )
+
+```
+
+
+
+
+
+2. Type help(stackedCIF) for plotting stacked version of the CIF for both causes of death.
+
+```{r p9_7, eval=TRUE,echo=TRUE,warnings=FALSE}
+par(mfrow=c(1,1))
+stackedCIF(cif, colour = c("gray80", "gray90"),
+           main = "", xlab="Time (years)",xlim=c(0,25) )	
+```
+
+Add text indicating areas under the curve 
+
+```{r p9_8, eval=TRUE,echo=TRUE,warnings=FALSE}
+par(mfrow=c(1,1))
+stackedCIF(cif, colour = c("gray80", "gray90"),
+           main = "", xlab="Time (years)",xlim=c(0,25) )
+text( 15, 0.15, "Oral cancer", pos = 2)
+text( 15, 0.5, "Other causes", pos = 2)
+```
+
+Add reference lines for 5-year mortalities.
+
+```{r p9_9, eval=TRUE,echo=TRUE,warnings=FALSE}
+
+par(mfrow=c(1,1))
+stackedCIF(cif, colour = c("gray80", "gray90"),
+           main = "", xlab="Time (years)",xlim=c(0,25) )
+text( 15, 0.15, "Oral cancer", pos = 2)
+text( 15, 0.5, "Other causes", pos = 2)
+
+res<-summary(cif)
+index<-which(floor(res$time)==5)[1]-1
+probs<-res$pstate[index,]
+segments(5, 0, 5, probs[1], col= 'blue',lwd=2)
+segments(5, probs[1], 5, probs[1]+probs[2], col= 'red',lwd=2)
+
+segments(-1, probs[1], 5, probs[1], col= 'blue',lwd=2,lty=2)
+segments(-1, probs[1]+probs[2], 5, probs[1]+probs[2], col= 'red',lwd=2,lty=2)
+
+```
+
+
+3. Plot stacked CIF for males and females for oral and all cause mortality. 
+
+
+```{r p9_10, eval=TRUE,echo=TRUE,warnings=FALSE}
+orca$nsex<-1*(orca$sex=="Male")
+
+par(mfrow=c(1,2))
+cif<- survfit( Surv( time, event, type="mstate") ~ nsex,
+                 data = orca)
+stackedCIF(cif, group=1, colour = c("gray80", "gray90"),
+           main = "Male", xlab="Time (years)" )	
+text( 15, 0.15, "Oral cancer", pos = 2)
+text( 15, 0.5, "Other", pos = 2)
+
+stackedCIF(cif, group=2, colour = c("gray80", "gray90"),
+           main = "Female", xlab="Time (years)" )	
+text( 15, 0.15, "Oral cancer", pos = 2)
+text( 15, 0.5, "Other", pos = 2)
+
+```
+
+
+4. Explore the effect of gender to death causes using cox model and report hazard ratio for males vs females.
+
+```{r, eval=TRUE,echo=TRUE,warnings=FALSE}
+cat("Oral cancer mortality")
+ci.exp(coxph(Surv( time, event==1) ~ nsex,  data = orca))
+cat("Other cause mortality")
+ci.exp(coxph(Surv( time, event==2) ~ nsex,  data = orca))
+```
+
+5. a. Look at oral cancer and other cause mortality by stage
+
+```{r, eval=TRUE,echo=TRUE,warnings=FALSE}
+par(mfrow=c(2,2))
+cif<- survfit( Surv( time, event, type="mstate") ~ stage,
+               data = orca)
+
+stackedCIF(cif, group=1, colour = c("gray80", "gray90"),
+           main = "stage I", xlab="Time (years)" ) 
+text( 15, 0.15, "Oral cancer", pos = 2)
+text( 15, 0.5, "Other", pos = 2)
+
+stackedCIF(cif, group=2, colour = c("gray80", "gray90"),
+           main = "stage II", xlab="Time (years)" )   
+text( 15, 0.15, "Oral cancer", pos = 2)
+text( 15, 0.5, "Other", pos = 2)
+
+stackedCIF(cif, group=3, colour = c("gray80", "gray90"),
+           main = "stage III", xlab="Time (years)" )   
+text( 15, 0.15, "Oral cancer", pos = 2)
+text( 15, 0.5, "Other", pos = 2)
+
+stackedCIF(cif, group=4, colour = c("gray80", "gray90"),
+           main = "stage IV", xlab="Time (years)" )   
+text( 15, 0.15, "Oral cancer", pos = 2)
+text( 15, 0.5, "Other", pos = 2)
+
+cat("Oral cancer mortality")
+ci.exp(coxph(Surv( time, event==1) ~ stage,  data = orca))
+cat("Other cause mortality")
+ci.exp(coxph(Surv( time, event==2) ~ stage,  data = orca))
+```
+
+
+
+
+b. Look at oral cancer and other cause mortality by the following age groups: (0,65] , (65,80] , (80,120]
+
+
+```{r, eval=TRUE,echo=TRUE,warnings=FALSE}
+orca$ageg<-cut(orca$age,breaks = c(0,65,80,120))
+
+par(mfrow=c(2,2))
+cif<- survfit( Surv( time, event, type="mstate") ~ ageg,
+               data = orca)
+
+stackedCIF(cif, group=1, colour = c("gray80", "gray90"),
+           main = levels(orca$ageg)[1], xlab="Time (years)" ) 
+text( 15, 0.15, "Oral cancer", pos = 2)
+text( 15, 0.5, "Other", pos = 2)
+
+stackedCIF(cif, group=2, colour = c("gray80", "gray90"),
+           main = levels(orca$ageg)[2], xlab="Time (years)" )   
+text( 15, 0.15, "Oral cancer", pos = 2)
+text( 15, 0.5, "Other", pos = 2)
+
+stackedCIF(cif, group=3, colour = c("gray80", "gray90"),
+           main = levels(orca$ageg)[3], xlab="Time (years)" )   
+text( 15, 0.15, "Oral cancer", pos = 2)
+text( 15, 0.5, "Other", pos = 2)
+```
+
+
+## Time dependent effects- Heart transplant data
+
+Look at the mortality related to the heart transplant using pre transplant time as refere and split the follow-up as in the lectures.
+Essentially we are redoing the analysis in the lecture for practice. In this case we have predefined time intervals of mortality risk.
+
+
+First a naive Cox analysis with age, year and surgery as covarites and treatment as the factor of interest.
+
+```{r,eval=TRUE, echo=TRUE,comment=NA}
+ci.lin(coxph(Surv(start, stop, event) ~
+    age + year + surgery + transplant,
+data=heart),Exp=TRUE)[,c(5:7)]
+```
+
+Use the data called jasa as the heart data, because this version of the data
+consists also dates for accepting into the program (accept.dt), transplant date (tx.date),
+and follow-up time (futime).
+
+
+```{r,eval=TRUE,echo=TRUE,comment=NA}
+heart.Lx <-
+Lexis(entry=list(age.time=age, 
+                 fu.time=0,
+tx.time=decimal_date(tx.date)-decimal_date(accept.dt)),
+duration=futime/365, 
+exit.status=as.character(fustat),
+data=subset(jasa, is.na(tx.date) | fu.date != tx.date))
+```
+
+
+```{r,eval=TRUE,echo=TRUE,comment=NA}
+head(heart.Lx)
+```
+
+Next, in order to make the cut points for subject separately we create
+three new variables for line 
+
+```{r,eval=TRUE,echo=TRUE,comment=NA}
+
+heart.Lx <- within(heart.Lx, {cut.0 <- tx.time; 
+                              cut.1 <- tx.time+0.2;
+                              cut.2 <- tx.time+0.4} );
+```
+
+
+```{r,eval=TRUE,echo=TRUE,comment=NA}
+head(heart.Lx)
+```
+
+
+```{r, eval=TRUE,echo=TRUE,comment=NA}
+heart.Lx.cut <- mcutLexis(heart.Lx, timescale="fu.time",
+wh=c("cut.0","cut.1","cut.2"),
+new.states=c("a","b","c"))
+```
+
+Look at the variable lex.Cst whic indicates the state at the entry to follow-up period.
+
+```{r,eval=TRUE,echo=TRUE,comment=NA}
+table(heart.Lx.cut$lex.Cst)
+```
+
+Do the cox regression using lex.Cst as factor covariate in the analysis.
+
+
+```{r,eval=TRUE,echo=TRUE,comment=NA}
+print(format(as.data.frame(ci.exp(coxph( 
+      Surv(fu.time, fu.time + lex.dur, lex.Xst==1)
+      ~ factor(lex.Cst),data=heart.Lx.cut))),digits=3)) 
+```
+
+If we want to adjust for the age at the biginning of the follow-up period we
+need the add age.time in the analysis.Let look at subject with lex.id =66.
+
+```{r,eval=TRUE,echo=TRUE,comment=NA}
+ heart.Lx.cut[heart.Lx.cut$lex.id==66,]
+```
+
+
+```{r,eval=TRUE,echo=TRUE,comment=NA}
+print(format(as.data.frame(ci.exp(coxph( 
+      Surv(fu.time, fu.time + lex.dur, lex.Xst==1)
+      ~ factor(lex.Cst)+age.time,data=heart.Lx.cut))),digits=5)) 
+```
+
+Use some other variable that you find interesting and try to add it as a covariate of stratify 
+the analysis.

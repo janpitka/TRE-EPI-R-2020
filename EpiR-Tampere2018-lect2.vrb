@@ -1,0 +1,12 @@
+\frametitle{Final comments}
+
+\bi
+\item When risk ratio $\phi$ or odds ratio $\psi$ is the parameter of interest, adjustment for confounding and evaluation of modification can be done by fitting an analogous binomial GLM with relevant link function.
+
+\item Modelling can easily be extended to cover one or more polytomous and/or continuous covariates.  Flexible functional forms may be specified to describe the effects of the latter type of variables.
+
+\item Binomial models are not limited to grouped data but may be fitted on individual data with binary outcomes, too.
+
+\item With more complicated models, especially involving continuous variables, the identity  link (sometimes log link, too) violates the basic range restriction:\\
+outcome probabilities $\pi$ must remain within 0 and 1.
+\ei

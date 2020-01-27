@@ -1,0 +1,48 @@
+library(Epi)
+library(data.table)
+
+counts<-c( 8, 98, 5, 115,22, 76, 16, 69)
+exposed<-c(1,1,0,0,1,1,0,0) #treatment=1, placebo=0
+outcome<-c(1,0,1,0,1,0,1,0) # 1=death, 0=Alive
+ageg<-c(0,0,0,0,1,1,1,1) # 0= <55 y , 1= >55 y
+
+ugdp<-data.table(ageg, exposed, outcome, counts)
+ugdp
+
+tab22<-ugdp[,
+            .(counts=sum(counts)),
+            by=list(exposed,outcome)]
+tab22
+
+mat<-matrix(tab22$counts, nrow=2, byrow=T)
+mat
+
+twoby2(mat)
+
+twoby2(mat, alpha = 0.1)
+
+RRmod <- glm( outcome ~ exposed, 
+              family=binomial("log"), 
+              w = counts, 
+              data=ugdp)
+summary(RRmod)
+
+round(ci.lin( RRmod, Exp=T)[ , -(3:4)], 4)
+
+
+lt55<-matrix(ugdp[1:4,]$counts, nr=2, byrow=T)
+twoby2(lt55)
+
+ge55<-matrix(ugdp[5:8,]$counts, nr=2, byrow=T)
+twoby2(ge55)
+
+
+RR2 <- glm(outcome ~ exposed+ageg, 
+              family=binomial(link="log"), 
+              w=counts,data=ugdp)
+round(ci.lin( RR2,Exp=T )[ , -(3:4)], 4)
+
+RR3 <- glm(outcome ~ exposed+ageg+exposed*ageg, 
+           family=binomial(link="log"), 
+           w=counts,data=ugdp)
+round(ci.lin( RR3,Exp=T )[ , -(3:4)], 4)

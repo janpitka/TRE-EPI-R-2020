@@ -1,0 +1,977 @@
+% typeset using LaTeX2e
+\documentclass[handout,12pt]{beamer}
+\mode<presentation>
+{
+ \usetheme{Singapore}
+ \setbeamercovered{transparent}
+}
+
+% making handouts
+%\usepackage[overlay]{textpos}
+%\usepackage{pgfpages}
+%\pgfpagesuselayout{4 on 1}[letterpaper, border shrink = %5mm, landscape]
+%\mode<presentation>{
+%  \setbeamercovered{invisible}
+%}
+% end of making handouts
+%\usepackage{rotating}
+\usepackage{graphicx}
+%\usepackage{mslapa}
+\usepackage{amsmath}
+%\usepackage[all]{xy}
+\usepackage{amssymb,graphicx}
+%\input psfig.sty
+\usepackage{booktabs}
+\usepackage{graphpap}
+\usepackage{verbatim}
+%\usepackage{amsbsy}
+%\graphicspath{E:/figures/}
+\graphicspath{{C:/Users/janne.pitkaniemi/figures/}}
+
+\setbeamertemplate{footline}[page number]
+\DeclareGraphicsExtensions{.pdf, .jpg, .png,.jpeg}
+% \DeclareGraphicsExtensions{.eps}
+
+\newcommand{\Rlogo}[1]{\includegraphics[#1]{Rlogo}}
+
+\input{usefulesa}
+\usepackage[labelformat=empty]{caption}
+%\captionsetup[figure]{labelformat=empty}
+
+% \newcommand{\R}{\bf \textsf{R}}
+\parskip\medskipamount
+
+\title{Epidemiologic Data Analysis using R \\
+Part 6: Analysis of case-control studies}  % : \\ Analysis of Follow-up Studies}
+% \Rlogo{height=1em} }
+
+\author{Janne Pitk\"aniemi \\ (Esa L{\"a}{\"a}r{\"a})}
+
+\institute{Finnish Cancer Registry, Finland,   
+ \texttt{<janne.pitkaniemi@cancer.fi>} \\
+ (University of Oulu, Finland,   
+ \texttt{<esa.laara@oulu.fi>}) }
+
+
+\date{University of Tampere \\Faculty of Social Sciences \\ % University of Tampere/Postgraduate training,
+Feb 26- Apr 9  2018}
+
+%\begin{center} \Rlogo{height=2em} \end{center}
+
+\AtBeginSubsection[]
+{
+  \begin{frame}<beamer>
+    \frametitle{Outline}
+    \tableofcontents[currentsection,currentsubsection]
+  \end{frame}
+}
+
+%\beamerdefaultoverlayspecification{<+->}
+
+\begin{document}
+\definecolor{darkgreen}{rgb}{0,.5,0}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+%-------------------------------------------
+
+\begin{frame}
+\frametitle{Contents}
+ 
+\bi
+\item[1.] Case-control designs 
+\medskip
+\item[2.] Exposure odds ratio (EOR)
+  and its interpretation
+\medskip
+\item[3.] Estimation of EOR by logistic regression
+\medskip
+\item[4.] Matched case-control studies
+\ei
+
+Main R functions to be covered
+\bi
+\item {\tt glm()} 
+\ei
+\end{frame}
+
+%----------------------------------------------------------------------
+\begin{frame} \frametitle{Case-control design}
+
+% {\bf\large Simplified description}
+\bi
+\item
+From given study  population (base pop'n) are selected 
+all or a random sample of
+\bi
+{\normalsize
+\item $D$ {\bf cases}, or individuals with the \\
+  disease being diagnosed during certain period
+\medskip
+\item $C$ {\bf controls}, or ``healthy'' individuals at risk.
+}
+\ei
+\item
+Exposure to risk factor $X$ and other covariates \\
+  assessed in cases and chosen controls.
+ \medskip
+ \item
+ To increase efficiency and remove confounding,
+the sampling of controls is often {\it stratified} or individually {\it matched} for age, gender,
+place of residence, {\it etc}.
+ \ei
+\end{frame} 
+%------------------------------------
+\begin{frame} 
+\frametitle{Exposure odds ratio (EOR)}
+\ \\
+With binary risk factor $X$ the results are summarized:
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Exposure         &        Cases        &    Controls & Total\\
+\midrule
+yes $(X=1)$        &        $D_{1}$ &        $C_{1}$  & $T_1$  \\
+no $(X=0)$         &        $D_{0}$  &        $C_{0}$  & $T_0$  \\
+\midrule  
+Total        &                $D $  &  $C$  & $T $ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\ \\
+Common effect measure:
+\bi
+\item {\bf exposure odds ratio}
+      $$  \text{EOR}  
+          =  \frac{ D_{1} / D_{0} } { C_{1} / C_{0} }  
+          = \frac{ D_{1} C_{0} } { D_{0} C_{1} }        
+      $$
+\ei
+\end{frame} 
+
+
+%-----------------------------
+ 
+
+\begin{frame}
+ \frametitle{Precision in EOR}
+\ \\
+Standard error of log(EOR),  95\% {error factor} (EF) \& \\
+ 95\% confidence interval (CI) for 
+the associated parameter:
+\bes
+ \SEL & = & \sqrt{ \frac{1}{D_1} + \frac{1}{D_0} 
+    + \frac{1}{C_1} + \frac{1}{C_0} } \\ & & \\
+ \EF & = & \exp \{ 1.96 \times \SEL \} \\ & & \\
+ \CI & = & [ \text{EOR} / \EF ,\ \text{EOR} \times \EF ] . 
+\ees
+NB. Random error depends inversely on numbers of cases and controls.
+\end{frame} 
+
+%--------------------
+
+\begin{frame} \frametitle{What parameter is estimated by EOR?}
+\ \\
+The answer depends on 
+\bi
+\item type of base population, from which cases emerge
+\bi
+{\normalsize
+\item[--] closed population or {\bf cohort}, or 
+\item[--] open or {\bf dynamic population},
+}
+\ei
+\item time dimensionality  \\
+-- longitudinal or cross-sectional
+\medskip
+\item sampling principle of controls:
+% Various sampling strategies (see e.g. Silva 1999, ch 9):
+\bi
+{\normalsize
+\item[(A)] case-noncase sampling
+ (epidemic ca-co study)
+\medskip 
+\item[(B)] case-cohort sampling
+\medskip
+\item[(C)] density sampling (incl. nested case-control study)
+}
+\ei
+\ei
+\end{frame} 
+
+
+\begin{frame}
+\frametitle{Sampling controls from a longitudinal base}
+
+\pause
+Simplified ideal situation:\\
+ Complete follow-up 
+of a cohort of initially healthy subjects with 
+no losses during a fixed risk period.
+
+\pause
+\begin{center}
+{\normalsize
+\setlength{\unitlength}{0.08cm}
+\begin{picture}(135,50)
+\thicklines
+\linethickness{0.3mm}
+
+%mittlere Box
+
+\put(40,45){\line(6,-1){55}}
+\put(40,5){\framebox(55,40){}}
+
+%Achsenbeschriftung
+\put(45,-1.5){\makebox(25,5){\small Time ($t$)}}
+\put(25,-1){\makebox(25,5){\small Start}}
+\put(85,-1){\makebox(25,5){\small End}}
+\put(70,2.5){\vector(1,0){20}}
+
+\pause
+%linker Text
+\put(0,5){\makebox(40,40){\parbox{7cm}{\begin{center}
+						   {\small{\bf B}:  Initially at risk}\\
+						%	(disease-free)\\ (C)\\
+							{\small $(N)$}
+							\end{center} }}}
+\pause
+\put(40,15){\makebox(55,10){\parbox{11cm}{ \begin{center}
+						{\small {\bf C}: Currently at risk $(N_t)$}
+							\end{center} }}}
+\put(67.5,25){\vector(0,1){15}}
+\put(67.5,15){\vector(0,-1){9}}							
+%rechter Text
+\pause
+\put(100,30){\makebox(40,15){\parbox{7cm}{\begin{center}
+					{\small		New cases\\of disease\\ $(D)$}
+							\end{center} }}}
+\pause							
+\put(100,5){\makebox(40,20){\shortstack{\strut\small
+       {\bf A}: Still at risk \\ \strut
+						%	(disease-free)\\ \strut 	(A)\\
+						 \strut $(N - D)$ }}}
+
+
+\end{picture}
+}
+\end{center}
+
+Possible sampling frames: {\bf A, B} and {\bf C}
+\end{frame} 
+
+%---------------------------------
+
+\begin{frame}
+\frametitle{Sampling schemes or designs for controls}
+
+\medskip
+\pause
+{\bf A:  Case-noncase sampling}\\
+\pause
+           \bi
+           \item
+           Controls chosen from those $N-D$ 
+           subjects % cohort members
+                            still at risk (healthy) 
+                            % , or free from the outcome 
+                    \underline{\it at the end}
+				    of the follow-up. 
+	     \ei \pause
+\pause   	     
+{\bf B:  Case-cohort sampling}: % ({\it juhtkohortuuring})  
+\pause\medskip
+	     \bi
+\item The control group or {\bf subcohort}   
+           is a random sample of the whole cohort $(N)$  
+				    \underline{\it at the start} of the follow-up.
+           \ei
+\pause           	     
+{\bf B:  Density sampling}: \\ % (\textit{tihedusvalik}):  \\
+         \pause\medskip  \bi 
+         %  \item[--] Also called % {\it density} sampling, 
+           % {\it risk-set} s., 
+           % {\it time-matched} s., or
+         %  {\it concurrent} sampling.
+			  %        or {\it dynamic} s.
+           \item  
+           Controls drawn 
+            \underline{\it during the follow-up}
+              from those \\ currently at risk. 
+           \medskip
+           \item {\bf Nested case-control design (NCC)}
+            % (\textit{pesastatud \dots}):
+             \\
+         A set of controls is sampled from
+         the {\it risk set} 
+          %  (alive \& yet uncensored)
+	%			  for the outcome 
+			  \underline{\it at each time $t$ of diagnosis}
+                           of a new case,
+	%			     i.e. have not yet contracted the disease by then.
+	 %\medskip
+   %       \item[$\bullet$]  applicable both in cohorts 
+   %        and in dynamic populations.
+   %        \pause\medskip
+   %       \item[$\bullet$] in dynamic populations, 
+   %       time-matching not always exact.
+	     \ei
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{EOR in case-noncase sampling design}
+
+\bi
+\item
+In the traditional or epidemic case-control study
+% or case-noncase design, 
+the controls are selected from
+those still healthy at the end of the
+risk period, during which cases are collected.
+\medskip
+\pause
+\item
+In this design EOR estimates the {\bf risk odds ratio} 
+$$ \psi = \frac{ \text{odds of dis. in the exp'd} }
+                     {   \text{odds of dis. in the unexp'd} } 
+     = \frac{ \pi_1/(1-\pi_1) }{ \pi_0/(1-\pi_0) }, $$
+  where $\pi_1$ and $\pi_0$ are the {risks} of disease in the exposed and unexposed groups, estimable from a corresponding cohort study by
+  incidence proportions $R_1$ and $R_0$. 
+\pause
+\medskip 
+\item 
+{\bf NB.}  $\psi \approx \pi_1 / \pi_0 = \phi$, {\it i.e.} close to {\bf risk ratio}, when risks $\pi_1$ and $\pi_0$ are low % ($< 0.1$) 
+\pause
+= the ``rare disease assumption''.              
+\ei
+
+% \pause
+% \medskip
+% \item Cross-sectional: EOR estimates \textbf{prevalence odds ratio}.
+\end{frame} 
+
+%--------------------
+
+\begin{frame} \frametitle{Density sampling}
+
+\bi
+\item New incident cases occurring during given study period 
+      are identified from the base population.
+\medskip      
+\item controls are randomly chosen from the population  
+      at risk at various times in the period 
+% $t_i$ when a case is diagnosed
+      (sometimes only once).
+\medskip      
+ \item For chronic disease studies this design is the most popular,
+\item Logically the only possibility in open populations,
+\ei
+
+{\bf Nested case-control study}: {\it time-matched} selection:
+\bi
+\item one or more (rarely over $5$)
+ controls chosen from the \\ population at risk 
+ at each time $t_d$ when a new case is diagnosed. 
+ \ei
+\end{frame} 
+
+
+%--------------------
+
+\begin{frame} \frametitle{EOR in density sampling}
+
+% With this design EOR {\it does not} estimate
+% the risk odds ratio $\psi$ (like in case-noncase sampling) but 
+\bi
+\item
+ In a full cohort
+study the true hazard ratio
+$\rho = \lambda_1 / \lambda_0 $ 
+is estimated by the incidence rate ratio 
+$$  \text{IR} = \frac{I_1} {I_0} = \frac{D_1 / D_0 }{ Y_1 / Y_0} . $$
+\item
+In a case-control study with density sampling 
+the {\bf exposure odds} among controls
+$C_1/C_0$ estimates the {exposure odds} $Y_1/Y_0$, i.e.
+the distribution of  person-years % into exposure groups
+ in the base population.
+\medskip
+\item
+Thus, the exposure odds ratio EOR
+$$ \text{EOR} = \frac{D_1 / D_0 }{ C_1 / C_0} \approx 
+  \frac{D_1 / D_0 }{ Y_1 / Y_0} = \text{IR} $$
+is a consistent estimator of the true hazard rate ratio
+  $\rho$ without any rare-disease assumption.
+\ei  
+\end{frame} 
+
+
+%----------------------------------
+\begin{frame}
+ \frametitle{Example. Alcohol use and oesophageal cancer}
+ (Tuyns et al 1977, see {\bf B\&D} 1980).
+
+\bi
+\item
+205 new cases of cancer identified in a French province 
+during two years, 
+and 770 randomly sampled population
+controls $\Rightarrow$ Density sampling
+\item
+{\bf NB.} No stratification or matching for age in design \\ 
+$\Rightarrow$
+Too many young controls in relation to few cases \\
+$\Rightarrow$  inefficient! 
+\medskip\item
+Exposure of interest: Daily consumption of alcohol.
+\medskip\item
+In the following table the data are summarized by dichotomized 
+exposure and stratified by age group.
+\medskip\item
+In R the data are found: {\tt data(esoph)}
+\ei 
+\end{frame} 
+
+%----------------------------------
+\begin{frame} \frametitle{Example: Results stratified by age} 
+{\scriptsize
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+Age & Exposure $\geq 80$ g/d & Cases & Ctrls & EOR \\
+\midrule
+25-34 & yes         &  1 & 9 & $\infty$  \\
+ { } & no                & 0 & 106 & { } \\
+\cmidrule{2-5} 
+35-44 & yes         &  4 & 26 &  5.05 \\
+ { } & no                & 5 & 164 & { } \\
+\cmidrule{2-5} 
+45-54 & yes         &  25 & 29 & 5.67 \\
+ { } & no                & 21 & 138 & { } \\
+\cmidrule{2-5} 
+55-64 & yes         &  42 & 27 & 6.36 \\
+ { } & no                & 34 & 139 & { } \\
+\cmidrule{2-5} 
+65-74 & yes         &  19 & 18 & 2.58 \\
+ { } & no                &  36 & 88 & { } \\
+\cmidrule{2-5}
+75-84 & yes         &  5 &  0 & $\infty$ \\
+ { } & no                & 8 & 31 & { } \\
+\bottomrule 
+Total & yes   & 96 & 109 & 5.64 \\
+{ }  & no    & 104 & 666 & {(crude)} \\
+\bottomrule
+\end{tabular}
+\end{center}
+}
+\end{frame} 
+
+\begin{frame}\frametitle{Example: (cont'd)} 
+\ \\
+
+Modification?
+\bi
+\item Stratum-specific EOR$_k$s somewhat variable.
+\medskip
+\item Random error in some of them apparently great (especially in the youngest and 
+	the oldest age groups).
+\ei
+
+Confounding?
+\bi
+\item Is exposure associated with age in the study population?
+\medskip 
+\item Look at variation in the age-specific prevalences of exposure among controls.
+\medskip
+\item Adjustment for age is generally reasonable.
+\ei
+\end{frame} 
+
+%-------------------------------
+
+
+%----------------------------------------------------------------------
+\begin{frame} \frametitle{Model for stratified data}
+\ \\
+{\it Random part}: 
+
+Conditional on total number of subjects 
+$$T_{jk} = D_{jk} + C_{jk}$$ 
+in each level $j$ $(j=1, 2)$ of
+exposure variable $X$ 
+and level $k$ $(k=1,\dots K)$ of
+covariate $Z$ we assume 
+$$ D_{jk} \sim  \mbox{Binomial}(T_{jk};\ p_{jk}) , $$
+where $p_{jk}$ is the ``probability of being a case''
+in a group of cases \& controls defined by $X$ and $Z$.
+
+\end{frame} 
+%----------------------------------
+
+\begin{frame} \frametitle{Model for stratified data (cont'd)}
+
+\medskip
+{\it Systematic part \& logit link}:
+\begin{center} 
+$ \text{logit}( p_{jk} )
+ = \log \left( \frac{\displaystyle p_{jk}}
+  { \displaystyle 1 - p_{jk} } 
+   \right ) = \alpha + \beta X + \gamma_k , $
+\end{center}   
+\bi
+\item[ ]$X$ = exposure, 1: 'exposed'; 0: 'unexposed',
+\item[ ]$\alpha = \text{logit}(p_{11}) = $  
+                  log of ``pseudo baseline odds'',
+\item[ ]$\beta$ = logarithm of exposure odds ratio,  
+\item[ ]$\quad  =    \log(\rho)$, 
+     logarithm of true rate ratio $\rho$
+\item[ ] \quad\quad with density sampling,
+\item[ ]$\gamma_k$ = logarithm of 
+   rate ratio btw levels $k$ and  1  of  $Z$.
+\ei
+Hence $e^{\beta} = \rho$ is the common rate ratio 
+for the exposure effect assumed constant over the levels of $Z$. 
+\end{frame} 
+%-------------------------------
+
+\begin{frame}[fragile] 
+\frametitle{Example. Estimation by {\tt glm()}}
+
+Input of data
+{\small
+\begin{verbatim}
+D <- c(0,1, 5,4, 21,25, 34,42, 36,19, 8,5) # no. of cases
+C <- c(106,9, 164,26, 138,29, 139,27, 88,18, 31,0) # controls
+T <- D + C         # cell totals
+\end{verbatim}
+}
+Generation and naming of the levels for factors describing 
+age group and alcohol exposure
+{\small
+\begin{verbatim}
+agr <- gl(6,2,12)  # 6 levels for age factor
+levels(agr) <- c("25-34", "35-44", "45-54", 
+                "55-64", "65-74", "75-84")
+alc <- gl(2,1,12)  # 2 levels for alcohol factor
+levels(alc) <- c("0-79g/d", "80+g/d")
+\end{verbatim}
+}
+\end{frame}
+% The estimated rate ratio $e^{1.67} = 5.31$ [95\% 3.7 to 7.7]
+%    Null deviance: 211.608  on 11  degrees of freedom
+%Residual deviance:  11.041  on  5  degrees of freedom
+% AIC: 65.369
+% \end{verbatim}
+
+\begin{frame}[fragile]
+\frametitle{Example. Estimation by {\tt glm()}}
+
+{\small
+\begin{verbatim}
+> data.frame( agrn = as.numeric(agr), agr, 
+              alcn = as.numeric(alc), alc, D, C, T)
+   agrn   agr alcn     alc  D   C   T
+1     1 25-34    1 0-79g/d  0 106 106
+2     1 25-34    2  80+g/d  1   9  10
+3     2 35-44    1 0-79g/d  5 164 169
+4     2 35-44    2  80+g/d  4  26  30
+5     3 45-54    1 0-79g/d 21 138 159
+6     3 45-54    2  80+g/d 25  29  54
+7     4 55-64    1 0-79g/d 34 139 173
+8     4 55-64    2  80+g/d 42  27  69
+9     5 65-74    1 0-79g/d 36  88 124
+10    5 65-74    2  80+g/d 19  18  37
+11    6 75-84    1 0-79g/d  8  31  39
+12    6 75-84    2  80+g/d  5   0   5
+\end{verbatim}
+}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Example. Estimation by {\tt glm()} cont'd)}
+
+Crude estimation
+{\small
+\begin{verbatim}
+> mod1 <- glm( D/T ~ alc, fam = binomial, w = T)
+> round(ci.lin(mod1, Exp=T)[ , -(3:4)], 4)
+
+            Estimate StdErr exp(Est.)   2.5%  97.5%
+(Intercept)  -1.8569 0.1054    0.1562 0.1270 0.1920
+alc80+g/d     1.7299 0.1752    5.6401 4.0006 7.9515
+\end{verbatim}
+}
+
+Estimation adjusted for age \\
+{\small
+\verb|> mod2 <- update(mod1, . ~ . + agr)|
+} 
+
+Goodness-of-fit evaluation \\
+{\small
+\verb|> c( mod2$deviance, mod2$df.res )|\\
+\verb|[1] 11.04118    5|
+}
+
+\medskip
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Example. Estimation by {\tt glm()} (cont'd)}
+
+Estimation results after adjusting for age
+{\small
+\begin{verbatim}
+> round(ci.lin(mod2, Exp=T)[ , -(3:4)], 4)
+
+            Estimate StdErr exp(Est.)   2.5%    97.5%
+(Intercept)  -5.0543 1.0094    0.0064 0.0009   0.0461
+alc80+g/d     1.6699 0.1896    5.3116 3.6630   7.7022
+agr35-44      1.5423 1.0659    4.6753 0.5788  37.7668
+agr45-54      3.1988 1.0232   24.5022 3.2984 182.0171
+agr55-64      3.7135 1.0185   40.9966 5.5688 301.8094
+agr65-74      3.9669 1.0231   52.8196 7.1112 392.3239
+agr75-84      3.9622 1.0650   52.5723 6.5193 423.9520
+
+\end{verbatim}
+}
+\end{frame}
+
+%-------------------------------------------------
+
+\begin{frame}
+\frametitle{Matched case-control study}
+\ \\
+Matching
+\bi
+\item For each case choose 
+    1 or more (rarely over $4$) controls with
+      same age ({\it eg.} within 1 year, 
+      or in the same 5-year ageband), 
+      sex, place of living, {\it etc.} 
+      \medskip
+\item Implies stratification in design: 
+each matched case-control set forms one stratum.
+    \medskip
+\item Improves efficiency of the study \& estimation of 
+effect parameters, if matching factors are 
+   strong determinants of outcome.
+\ei
+\end{frame} 
+
+%--------------------------------
+
+\begin{frame}
+\frametitle{Matched case-control study (cont'd)}
+\ \\
+Some principles
+\bi
+\item Impractical to match on many other covariates than those mentioned,
+\medskip
+\item Matching on a correlate $Z$ of risk factor $X$ of interest, which is not 
+	causal determinant of outcome \\
+	 $\Rightarrow$ overmatching, loss of efficiency.
+	\medskip
+\item {\it Counter-matching}: Choose controls which are different from
+	case w.r.t. $Z$, close correlate of $X$ \\
+	 $\Rightarrow$ increases efficiency.
+\ei
+\end{frame} 
+
+
+%--------------------------------
+
+\begin{frame}
+\frametitle{Matched case-control study (cont'd)}
+\ \\
+\bi
+\item
+{\it Matched design $\Rightarrow$ matched analysis!}
+\medskip
+\item
+Ignoring matching in analysis my lead to biased results.
+\medskip
+\item
+Matching factors must always be accounted 
+for in estimating the rate ratios of interest. 
+\medskip
+\item
+With very close matching (based {\tt e.g.} on sibship, neighbourhood)
+ use {\it  conditional logistic regression} modelling \\
+ -- function {\tt clogit()} in package {\tt survival}
+\ei
+
+\end{frame} 
+
+\begin{frame}
+\frametitle{Concluding remarks}
+\bi
+
+\item
+Analysis using {\tt glm()} on individual data records from 
+an unmatched study proceeds similarly as for grouped data.
+\medskip
+\item
+Matched design $\to$ matched analysis by \texttt{clogit()}.
+\medskip
+\item
+More complicated designs, like counter-matched and two-phase studies,
+require specialized methods and progamming.
+\medskip
+\item
+Case-cohort design: Use function {\tt coxph()} in package {\tt survival}
+but adjust standard errors {\it etc.} appropriately.  
+\ei
+\end{frame}
+
+\end{document}
+%-------------------------------------
+
+
+\end{document}
+
+
+
+
+
+
+
+
+\begin{frame}\frametitle{Example.}  
+\ \\
+Use of oestrogens and endometrial cancer 
+(Mack et al. NEJM 1976; 294: 1262-67, see also Breslow \& Day 1980).
+
+63 women with endometrial cancer diagnosed in 1971-75, aged 57 to 83 y, 
+living in retirement community near Los Angeles were identified as case group.  
+\end{frame} 
+
+%-------------------------------------
+
+\begin{frame}\frametitle{Example (cont'd).}  
+\ \\
+Each case woman was matched to 4 control women who 
+\bi
+\item were alive and living in same retirement community at the time case was 
+	diagnosed,
+\item were born within 1 year of the case's time of birth
+\item had same marital status,
+\item had entered the community at about same time,
+\item had not have hysterectomy prior to date of diagnosis of the case.
+\ei
+\end{frame} 
+%----------------------------------------------
+
+\begin{frame}\frametitle{Example (cont'd)} 
+Dataset {\tt bdendo.dta} includes following variables
+\bi \item[]
+\bi \item[]
+\bi
+\item[{\tt set} =] number of case-control set (stratum),
+\item[{\tt d} =] case indicator: 1= case, 0 = control.
+\ei
+\ei
+\ei
+Exposure variables of interest
+\bi \item[]
+\bi \item[]
+\bi
+\item[{\tt est} =] use of any estrogen: 1=''yes'', 0=''no'',
+\item[{\tt cest} =] conjugate estrogen dose: \\
+  		1 = none, 2= 0.1-0.299,  3= 0.3-0.625, 4=0.625+
+\item[{\tt dur} =] duration (months) of conjugate estrogen therapy:\\
+  		0 = none, 1= 1-11, 2=12-47, 3= 48-95, 4=96+ 
+\ei
+\ei
+\ei
+\end{frame} 
+
+%--------------------------------
+
+\begin{frame}\frametitle{Example (cont'd)}
+\ \\[-30pt]
+Some covariates
+\bi \item[]
+\bi \item[]
+\bi
+\item[{\tt age} =] age in years,
+\item[{\tt agegrp} =] age group: 
+            1 = 55-59, $\dots$ , 6=80-84 years,
+\item[{\tt gall} =] history of gallbladder disease:  
+          2=''yes'', 1=''no'',
+\item[{\tt hyp} =] history of hypertension: 2=''yes'', 1=''no'',
+\item[{\tt ob} =] history of obesity: 2=''yes'', 1=''no'',
+\item[{\tt non} =] history of use of non-estrogen drugs: \\
+   2=''yes'', 1=''no''.
+\ei
+\ei
+\ei
+\end{frame} 
+%----------------------------------
+
+\begin{frame}\frametitle{Stratified analysis}
+\ \\
+Mantel-Haenszel summary EOR$^{\MH}$ for risk factor(s) $X$ of interest 
+similarly calculated as before, stratification being based
+on individual case-control sets.
+
+Main effects of the matching variables cannot be
+estimated.
+
+{\it Example.} Effect of {\tt est} adjusted for matching is estimated by
+\bi
+\item[.] mhodds d est, by(set)
+\ei
+\end{frame} 
+%----------------------------------
+
+\begin{frame}\frametitle{Stratified analysis}
+\ \\
+Result:
+$\Rightarrow$ EOR$^{\MH} = 8.46 > 7.87$ = crude EOR
+\end{frame} 
+%----------------------------
+
+\begin{frame}\frametitle{Modification in stratified analysis}
+\ \\
+Evaluation of effect modification 
+for covariate $Z$ included in matching criteria:
+\bi
+\item[$\Rightarrow$] Estimate $\EOR^{\MH}$ separately for
+	levels of $Z$ and inspect heterogeneity
+	of these informally or by statistical test.
+\ei
+\end{frame} 
+%----------------------------
+
+\begin{frame}\frametitle{Modification in stratified analysis (cont'd)}
+\ \\
+{\it Example.} Modification by age: Calculate $\EOR^{\MH}$ for {\tt est}
+separately for {\tt age} $< 70$ years and {\tt age} $\geq 70$.
+\bi
+\item[.] {\tt mhodds d est if agegrp $<$ 4, by(set)}
+\ei
+
+\bi
+\item[.] {\tt mhodds d est if agegrp $>$ 3, by(set)}
+\ei
+
+\end{frame} 
+%------------------------------------
+
+\begin{frame}\frametitle{Modification (cont'd)}
+\ \\
+Modification due to covariates not matched for:
+very inefficient to evaluate.
+
+{\it Example.} Modification by {\tt gall}:
+\bi
+\item[.] {\tt mhodds d est if gall==1, by(set)}
+\ei
+\end{frame} 
+%------------------------------------
+
+\begin{frame}\frametitle{Modification (cont'd)}
+\ \\
+\bi
+\item[.] {\tt mhodds d est if gall==0, by(set)}
+\ei
+Severe loss of information.
+
+Modelling is called for!
+\end{frame} 
+
+%------------------------------------------------
+
+\begin{frame}\frametitle{Conditional logistic regression}
+\ \\[-20pt]
+To take matching into account,
+common {\it unconditional} logistic model
+$$ \logit( \pi_{jk} ) =
+     \alpha + \beta x + \gamma_k  $$
+would necessarily include separate parameter $\gamma_k$
+for all $-$ one case-control sets $k$.
+\bi
+\item[$\Rightarrow$] no. of parameters $\rightarrow$ too large,
+\item[$\Rightarrow$] bias in estimating exposure effect $\beta$.
+\ei
+Remedy: eliminate ''nuisance parameters'' $\alpha_k$ by {\it conditional logistic 
+regression}.
+\end{frame} 
+
+%------------------------------------------------
+
+\begin{frame}\frametitle{Conditional logistic regression (cont'd)}
+\ \\
+Contributions $L_k$ from each case-control set $k$ 
+to the {\it conditional likelihood} used in ML estimation from each case-control 
+set are of the form
+\bi
+\item[ ]
+$L_k$ = ''{\it probability that the case subject is a case given that one set 
+member is a case}''.
+\ei
+These conditional probabilities have complicated expressions. 
+They depend on risk factor and covariates and parameter(s) of 
+interest $\beta$, etc. but no more on $\gamma_k$s.
+
+\end{frame} 
+%---------------------------------
+
+\begin{frame}\frametitle{Fitting in Stata}
+\ \\[-20pt]
+First adjusting for matching factors only
+\bi
+\item[.] {\tt  clogit d est, strata(set) or}
+\ei
+Model-adjusted EOR somewhat smaller than EOR$^{\MH}$
+
+NB! Ignore again the {\tt Std.Err.} column
+\end{frame} 
+%---------------------------------
+
+\begin{frame}\frametitle{Fitting (cont'd)}
+\ \\[-20pt]
+On logit scale:
+\bi
+\item[.] {\tt  clogit d est, strata(set) }
+\ei
+
+Here  {\tt Std.Err.} meaningful.
+\end{frame} 
+
+%-------------------------------
+
+\begin{frame}\frametitle{Fitting (cont'd)}
+\ \\[-20pt]
+Further adjustment for {\tt gall} and evaluation of
+modification by {\tt gall}
+\bi
+\item[.] {\tt xi: clogit d i.est i.gall, strata(set) or}
+\ei
+
+\end{frame} 
+
+%-------------------------------
+
+\begin{frame}\frametitle{Fitting (cont'd)}
+\ \\[-20pt]
+\bi
+\item[.] {\tt xi: clogit d i.est i.gall, strata(set) or}
+\ei
+Strong negative modification! 
+
+Interpretation?
+\end{frame} 
+
+%---------------------------------------
+\end{document}

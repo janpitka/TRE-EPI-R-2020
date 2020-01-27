@@ -1,0 +1,262 @@
+---
+title: 'Epidemiologic data analysis using R '
+author:
+- Faculty of Social Sciences, University of Tampere
+- ' -- '
+- Janne Pitkäniemi
+date: "`r format(Sys.time(), '%d.%m.%Y')`"
+output:
+  word_document: default
+  pdf_document: default
+subtitle: Practicals 5
+---
+
+
+```{r p5_0, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, comment = NA)
+setwd("C:/Users/janne.pitkaniemi/Projects/TRE2018")
+```
+
+
+# Topics of practical 5
+
+
+Learning objectives of this practical
+
+*   drawing life-lines of follow-up on members of a cohort using function Lexis.diagram() in Epi,
+*   splitting follow-up times simultaeously by ageband and calendar period, and expanding the data frame by the Lexis tools in Epi
+*   merging two dataframes into one data frame using function merge()
+*   computation of expected numbers of cases based on age- and period-specific rates, and comparison of the observed numbers of cases in a target cohort.
+
+In this practical we consider time-splitting simultaneously in several time scales. Splitting the follow-up times of a special occupational or other cohort of interest jointly by age and calendar time is needed for estimation of the relative rate of the outcome event considered in the cohort as compared to a relevant reference population. Often the latter is a national general population, of which age-specific rates in different calendar periods are available from official statistics. Adjustment for age and calendar time in the relative rate estimation is then performed by the principle called indirect standardization, which provides the standardized incidence ratio SIR or standardized mortality ratio SMR as the main result. SIR equals the observed number of cases in the cohort divided by the expected number, the latter being estimated from the age-period specific reference rates and person-years in the cohort. We illustrate the use of the
+available tools in Epi by which these computations can be done in R.
+
+**The Danish Thorotrast study**
+
+In the period 1935-50 a contrast medium called Thorotrast was used for cerebral angiography (X-ray imaging of the brain). This contrast medium contained 232Th, thorium. It turns out that thorium is not excreted from the body, it is permanently deposited, some 60% in the liver, 20% in the spleen and some 10% in the bone marrow, and a very small fraction in other organs.
+
+Thorium is an $\alpha$ -emitting radionuclide, i.e. it emits $\alpha$-rays (He-nuclei) which is ionizing, but not particularly penetrating; it only penetrates 2-3 cell-layers. The half-life of 232Th is 1.4 $\times$ 1010 years, so the patients that have been injected with Thorotrast exposed are exposed to a constant,small $\alpha$-radiation for life. 
+
+The study cohort includes 999 Thorotrast patients who had a cerebral angiography in the period 1935-50. In addition there is a control group comprising 1480 reference subjects who had a cerebral angiography in a later but somewhat overlapping period, 1946-63, on similar indications as the Thorotrast patients, but with another contrast medium, not containg thorium.
+Persons undergoing cerebral angiography are in may cases seriously ill, they are suspected of cerebral malformations or tumours. Hence, both the Thorotrast group and the control group have very high mortality rates, and a pattern of causes of death that differs substantially from the general population. Especially during the first year after diagnosis there is a very high mortality among the patients, which is largely associated to the conditions that have lead to the cerebral angiography. 
+
+Therefore we start the follow-up of both Thorotrast patients and
+control patients one year after the angiography.
+
+The cohort data are in the file thoro in the Epi package. Mortality rates (per 1000 personyears) for Denmark, by sex and 5 year ageband (0-4, 5-9, . . . , 90-95), for each of the 5-year calendar periods 1938-42, 1943-47, 1948-52, . . . 1988-92, are in the file gmortDK. Besides the overall mortality (rt), this file also contains the mortality rates for 15 different causes of death. Total mortality in the cohort by contrast medium
+In this exercise our outcome event will be death from any cause. The occurrence of death during the follow-up can be derived from value 1 of variable exitstat. 
+
+## 1. The data
+
+Load the Epi package and the data frame thoro, and see its contents:
+
+```{r p5_1, eval=TRUE,echo=TRUE,warnings=FALSE}
+library(Epi)
+data( thoro )
+str( thoro )
+```
+
+The time variables are internally stored in the Dates format, i.e. days since 1/1/1970, but are formatted to print out as dates. To see this try:
+
+```{rp5_2, eval=TRUE,echo=TRUE,warnings=FALSE}
+head( thoro )
+thoro$birthdat[1:6]
+as.numeric(thoro$birthdat)[1:6]
+```
+
+## 2. Date formatting
+
+In the following it will be more convenient to have dates as fractional calendar years as produced by function cal.yr(). Likewise it is more convenient to have the outcome variable named as death and coded 1 for dead and 0 for censored:
+
+```{r p5_3, eval=TRUE,echo=TRUE,warnings=FALSE}
+thoro <- transform( thoro, dob = cal.yr( birthdat ),
+doi = cal.yr( injecdat ),
+dox = cal.yr( exitdat ),
+dol = cal.yr( liverdat ),
+death = as.numeric( exitstat==1 ) )
+```
+
+Assign individual person-times to variable y, compute the ages at entry and exit, and convert contrast variable into a factor changing the order of its levels, too. Look at
+univariate summaries of all variables:
+
+```{r p5_4, eval=TRUE,echo=TRUE,warnings=FALSE}
+thoro <- transform( thoro, y = dox - doi,
+agen = doi - dob, agex = dox - dob,
+contrast = factor(2-contrast,
+labels = c("Other", "Thoro") ) )
+summary( thoro )
+```
+
+3. Draw parallel Lexis-diagrams to describe the follow-up lifelines for both contrast groups separately, first for the Thoro group:
+
+```{r p5_5, eval=TRUE,echo=TRUE,warnings=FALSE}
+par(mfrow=c(1,2))
+Lexis.diagram( age = c(0,110), date = c(1935,1995),
+entry.date = doi, exit.date = dox, birth.date = dob,
+fail = 1*(exitstat==1), cex.axis = 1.5, cex.lab = 1.5,
+lwd.life = 0.5, col.life = "gray",
+cex.fail = 0.8, pch.fail = c(1,16),
+col.fail = c("green","black"),
+main = "Thorotrast group",
+cex.main = 1.3,
+data = subset(thoro, contrast=="Thoro") )
+box()
+abline( v = c(1950, 1980) )
+abline( h = c(20, 50, 80) )
+
+Lexis.diagram( age = c(0,110), date = c(1935,1995),
+entry.date = doi, exit.date = dox, birth.date = dob,
+fail = 1*(exitstat==1), cex.axis = 1.5, cex.lab = 1.5,
+lwd.life = 0.5, col.life = "gray",
+cex.fail = 0.8, pch.fail = c(1,16),
+col.fail = c("green","black"),
+main = "Other group",
+cex.main = 1.3,
+data = subset(thoro, contrast=="Other") )
+box()
+abline( v = c(1950, 1980) )
+abline( h = c(20, 50, 80) )
+
+```
+
+Draw a similar diagram for the Other group by appropriate subsetting.
+
+
+## 3. Lexis object
+
+Create a Lexis object from the data frame and check the content of its 20 first lines
+
+```{r p5_6, eval=TRUE,echo=TRUE,warnings=FALSE}
+thL <- Lexis( entry = list( per = doi ),
+              exit = list( per = dox, 
+                           age = dox - dob ),
+              exit.status = 1*( exitstat<2 ), 
+              data = thoro)
+thL[1:20, 1:10 ]
+```
+
+
+The first descriptive task is to look at total mortality in the cohort overall and by contrast
+medium. Use function stat.table():
+
+```{r p5_7, eval=TRUE,echo=TRUE,warnings=FALSE}
+T1 <- stat.table( index = contrast,
+contents = list( N = count(), # group size
+D = sum(lex.Xst), # no. of deaths
+Y = sum(lex.dur), # person-times
+rate = ratio(lex.Xst, lex.dur, 1000) ), # rate/1000 y
+margin = T, data=thL )
+print(T1, digits = c(sum=0, ratio=1))
+```
+
+
+The follow-up of the two groups of patients takes place in very different time periods, and the two groups have slightly differing age-distributions, too. Therefore it is desirable to control for age and calendar time. This could be done by making an internal comparison of the two contrast groups controlled for age, sex, and calendar period. However, because of the different calendar periods of follow-up, a large portion of information would be lost. Instead, the comparison will be standardized for
+age, sex, and period, using SMRs.
+
+The Danish mortality figures are in the file gmortDK. In order to be able to match the Danish population mortality rates to the follow-up data these must first be split by current age and calendar time. The names and coding of the age and period variables must be chosen to conform
+with that in gmortDK. 5. Load the population mortality data and have a look at its contents. You would notice
+that the calendar periods per are coded as yyyy 1900 where yyyy is the starting year of the period. Therefore, we have to form a new period variable pgr adding constant 1900
+to the values of the existing variable:
+
+```{r p5_8, eval=TRUE,echo=TRUE,warnings=FALSE}
+data(gmortDK)
+gmortDK[c(1:10, 409:418), 1:6 ]
+gmortDK$pgr <- gmortDK$per + 1900
+```
+
+## 5. Split the follow-up data 
+
+Using the thoro by two timescales: age in 5-year agebands named by their lower cutpoints 0, 5, 10,. . . , 90, and calendar time in 5-year periods divided by cutpoints 1938, 1943,. . . , 1993 and named according to their lower limit years ("left"). 
+
+NB! You must make sure that the age-group and the period variables in the new dataset
+have the same names as in gmortDK, namely agr and per, respectively.
+
+```{r p5_9, eval=TRUE,echo=TRUE,warnings=FALSE}
+thL.a <- splitLexis( thL, "age", breaks = seq(5, 95, 5) )
+thL.ap <- splitLexis( thL.a, "per", breaks = seq(1938, 1993,5) )
+thL.ap$agr <- timeBand( thL.ap, "age", "left")
+thL.ap$pgr <- timeBand( thL.ap, "per", "left")
+```
+
+How many observations there are in the new data frame? Use function dim(). Take a look at the content of the rows pertaining to id-number 1:
+
+```{r p5_10, eval=TRUE,echo=TRUE,warnings=FALSE}
+thL.ap[thL.ap$id==1, ]
+```
+
+Make sure that you understand how these records relate to the original records in thoro.
+
+## 6. SMR
+
+In order to conduct the SMR-calculations, we now match the rate file gmortDK to the data frame expanded from thoro (we only take 4 columns of gmortDK, and skip all the
+cause-specific rates):
+
+```{r p5_11, eval=TRUE,echo=TRUE,warnings=FALSE}
+thL.apd <- merge( thL.ap, gmortDK[, c("agr", "pgr", "sex", "rt")],
+by = c("agr", "pgr", "sex") )
+```
+
+## 7. Expected deaths
+
+We add two variables to this expanded data frame: y containing the person-time, and e
+with the expected number of deaths = the person-years multiplied by the mortality rate
+from the reference population, and put d to denote the observation of outcome event.
+
+```{r p5_12, eval=TRUE,echo=TRUE,warnings=FALSE}
+thL.apd <- transform( thL.apd, d = lex.Xst,
+y = lex.dur, e = lex.dur*(rt/1000) )
+str( thL.apd )
+```
+
+## 8. Tabulate 
+
+Use stat.table() to make a table of SMR (observed/expected) classified by contrast
+
+```{r p5_13, eval=TRUE,echo=TRUE,warnings=FALSE}
+T2 <- stat.table( contrast,
+list( Y = sum(y), D = sum(d), E = sum(e),
+SMR = ratio(d,e), "rate /1000y" = ratio(d,y,1000) ),
+margin = T, data = thL.apd )
+print(T2, dig = c(sum=1, ratio=2))
+```
+
+In order to assess if the SMR's between thorotrust and 
+other groups are different fit poisson regression model
+with offset term as log of the expected number of events calculated earlier offset(log(e)).
+
+```{r p5_14, eval=TRUE,echo=TRUE,warnings=FALSE}
+m1<-glm(d~offset(log(e)),
+    family=poisson,
+    data=thL.apd[thL.apd$contrast=="Thoro",])
+
+m2<-glm(d~offset(log(e)),
+        family=poisson,
+        data=thL.apd[thL.apd$contrast=="Other",])
+
+ci.lin(m1,Exp=TRUE)[,c(5:7)]
+ci.lin(m2,Exp=TRUE)[,c(5:7)]
+```
+
+
+
+## 9. Use data.table to obtain a table of observed and expected deaths cross-classified by age and period:
+
+```{r p5_15, eval=TRUE,echo=TRUE,warnings=FALSE}
+#stat.table( list( agr, pgr ), list( D=sum(d), E=sum(e) ),
+#margin=T, data=thL.apd )
+
+library(data.table)
+thLnew<-data.table(thL.apd)
+thLnew[order(agr,pgr),
+       .(D=sum(d,na.rm=F),E=sum(e,na.rm=F)),
+       by=list(agr,pgr)]
+```
+
+Then, create a similar table restricted to the Thoro patient group using
+
+```{r p5_16, eval=TRUE,echo=TRUE,warnings=FALSE}
+data= subset( thL.apd, contrast=="Thoro") 
+```
+
+(which chooses from the data frame thL.apd only those subjects, whose contrast value was Thoro) as argument to stat.table(). Finally, display a similar table for the Other patient group.
+

@@ -1,0 +1,18 @@
+\frametitle{Example. Estimation by {\tt glm()} (cont'd)}
+
+Estimation results after adjusting for age
+{\small
+\begin{verbatim}
+> round(ci.lin(mod2, Exp=T)[ , -(3:4)], 4)
+
+            Estimate StdErr exp(Est.)   2.5%    97.5%
+(Intercept)  -5.0543 1.0094    0.0064 0.0009   0.0461
+alc80+g/d     1.6699 0.1896    5.3116 3.6630   7.7022
+agr35-44      1.5423 1.0659    4.6753 0.5788  37.7668
+agr45-54      3.1988 1.0232   24.5022 3.2984 182.0171
+agr55-64      3.7135 1.0185   40.9966 5.5688 301.8094
+agr65-74      3.9669 1.0231   52.8196 7.1112 392.3239
+agr75-84      3.9622 1.0650   52.5723 6.5193 423.9520
+
+\end{verbatim}
+}

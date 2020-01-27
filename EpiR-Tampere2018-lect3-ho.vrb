@@ -1,0 +1,22 @@
+\frametitle{Example (cont'd)}
+\ \\
+Observed and fitted rates \& fitted
+rate ratios between smokers and non-smokers
+in each ageband
+{\small
+\begin{verbatim}
+     age smok  rate fit.rate   d fit.mu res.D res.P
+1  35-44    1   6.1      5.6  32   29.3  0.44  0.44
+2  35-44    0   1.1      1.8   2    3.4 -0.83 -0.77
+3  45-54    1  24.0     24.7 104  106.8 -0.27 -0.27
+4  45-54    0  11.2     10.8  12   11.5  0.13  0.13
+5  55-64    1  72.0     72.8 206  208.3 -0.15 -0.15
+6  55-64    0  49.0     43.3  28   24.7  0.64  0.65
+7  65-74    1 146.9    144.4 186  182.9  0.23  0.23
+8  65-74    0 108.3    116.9  28   30.2 -0.41 -0.41
+9  75-84    1 191.8    192.9 102  102.6 -0.06 -0.06
+10 75-84    0 212.0    212.5  31   31.1 -0.01 -0.01
+\end{verbatim}
+\normalsize
+Residual Dev = 1.64  df = 5; The fit is excellent!
+}

@@ -1,0 +1,25 @@
+---
+title: "Untitled"
+author: "Janne Pitkaniemi"
+date: "26 helmikuuta 2018"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r ,echo=TRUE,eval=TRUE}
+library(haven)
+library(data.table)
+library(knitr)
+
+breastca <- read_sav("breastca.sav")
+brcadt<-data.table(breastca)
+res<-brcadt[order(HISTGRAD) & !is.na(HISTGRAD),.N,
+            by=HISTGRAD][, prop := 100*(N/sum(N)), ]
+kable(res)
+
+```

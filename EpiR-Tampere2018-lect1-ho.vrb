@@ -1,0 +1,21 @@
+\frametitle{Calling the new function (2)}
+
+\ \\
+When {\tt t.estimCI()} is called,
+a list with 2 named components is returned and printed:
+\small
+\begin{verbatim}
+> T.estimCI(folate ~ group, var.equal=T, conf.level=0.9)
+\end{verbatim}
+\small
+\begin{verbatim}
+
+$Meandiff
+Mean difference
+       60.30556
+$Conflimits
+[1]     19.09502 101.51610
+attr(,"conf.level")
+[1] 0.90
+\end{verbatim}
+\normalsize

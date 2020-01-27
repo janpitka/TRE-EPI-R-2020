@@ -1,0 +1,23 @@
+
+\frametitle{Fitting the Poisson model}
+\ \\
+Use function {\tt glm()} on the expanded data frame:
+\begin{verbatim}
+> m.ea <- glm( d_ik/y_ik ~ ageband + eg2,
++        fam = poisson, w = y_ik, data = dietA )
+\end{verbatim}
+\small
+\begin{verbatim}
+> round(ci.lin(m.ea, Exp=T)[ , -(3:4)], 4 )
+                Estimate StdErr exp(Est.)   2.5%  97.5%
+(Intercept)      -5.4033 0.4390    0.0045 0.0019 0.0106
+ageband(50,60]    0.3027 0.4721    1.3535 0.5366 3.4145
+ageband(60,70]    0.8456 0.4613    2.3294 0.9431 5.7535
+eg2<=2750 KCals   0.6233 0.3027    1.8651 1.0306 3.3753
+\end{verbatim}
+\normalsize
+The estimated rate ratio for ``low'' vs. ``high''
+energy consumption, adjusted for age, is thus
+1.87 [1.03 to 3.38], only slightly lower than the
+unadjusted one 1.92 [1.06 to 3.47].
+

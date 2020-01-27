@@ -1,0 +1,52 @@
+---
+title: "Epidemiologic Data Analysis using R"
+author: 
+  - Janne Pitkäniemi
+  - University of Tampere
+  - Faculty of Social Sciences 
+  -  University of Tampere Postgraduate training 
+date: "Feb 26 - Apr 9, 2018" 
+output:
+  word_document: default
+---
+
+## Practical 1
+
+```{r prac1, child='EpiR-Tampere2018-prac1.Rmd'}
+```
+
+
+## Practical 2
+
+```{r prac1, child='EpiR-Tampere2018-prac2.Rmd'}
+```
+
+## Practical 3
+
+```{r prac1, child='EpiR-Tampere2018-prac3.Rmd'}
+```
+
+## Practical 4
+
+```{r prac1, child='EpiR-Tampere2018-prac4.Rmd'}
+```
+
+## Practical 5
+
+```{r prac1, child='EpiR-Tampere2018-prac5.Rmd'}
+```
+
+## Practical 6
+
+```{r prac1, child='EpiR-Tampere2018-prac6.Rmd'}
+```
+
+## Practical 7
+
+```{r prac1, child='EpiR-Tampere2018-prac7.Rmd'}
+```
+
+## Practical 9
+
+```{r prac1, eval=TRUE,echo=TRUE,comment=NA, child='EpiR-Tampere2018-prac9.Rmd'}
+```
