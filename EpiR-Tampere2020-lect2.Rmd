@@ -94,3 +94,144 @@ Exposure         &        Cases        &    Non-cases    &    Group size\\ \hlin
 $$ R_1 = \frac{D_1}{N_1}, \qquad
    R_0 = \frac{D_0}{N_0} . $$ 
 - These are crude *estimates* of the true *risks* $\pi_{1}$, and $\pi_{0}$ of outcome in the two exposure categories.
+
+
+## Example: Observational clinical study
+
+Treatment failure in two types of operation for renal calculi 
+(Charig \textit{et al.} 1986. \textit{BMJ} 292: 879-882)
+
+- OS = open surgery (invasive)
+- PN = percutaneous nephrolithotomy 
+
+\begin{center}
+\begin{tabular}{ccccc} \hline
+Treatment & Failure  &  Success   &   Patients  & Failure-\% \\
+group ($j$) &  ($D_{j}$) &  ($C_{j}$) &  ($N_{j}$) &  ($R_{j}$)\\ \hline
+   OS ($j=1$)    & 77     & 273   & 350        & {\em 22.0}   \\
+   PN ($j=0$)    & 60     & 290   & 350        & {\em 17.1} \\ \hline
+\end{tabular}
+\end{center}
+
+Crude incidence proportions of treatment failure: $$R_1 = 77/350 = 22.0\%,\qquad R_0 = 60/350 = 17.1\%$$ 
+
+## Risks and their comparative parameters
+
+The **risk** or **probability** of binary outcome (*e.g.* new case of disease) in the `exposed` $\pi_1$ and in the `unexposed` $\pi_0$ as to binary risk factor $X$ (values 1 and 0) are typically compared by
+
+- risk difference $\quad \theta = \pi_1 - \pi_0$
+- risk ratio $\quad	\quad \quad \phi = \pi_1/\pi_0$
+- odds ratio (risk odds ratio)
+$$\psi = \frac{\pi_1/(1 - \pi_1)}{\pi_0/(1 - \pi_0)}$$
+
+The odds ratio is close to the risk ratio when the risks are `small` (less than $0.1$\ -- the `rare-disease assumption`).
+
+## Odds and Odds Ratio (OR)
+
+The **odds ($\Omega$)** is the probability of binary outcome $P(Y=1)=\pi$ divided by the the probability of binary outcome $P(Y=0)=1-\pi$. 
+
+$$\Omega=\frac{\pi}{1-\pi}$$
+
+- Odds of 2.5 means that the probability of Y=1 (success) is two
+and half times higher than the probability of Y=0 (failure)
+- Odds 0.5 means that success probability of success is 50% of
+the probability of failure
+- Odds of 1 implies that probability of both
+outcomes 0.5 (equal)
+
+## Probability and odds
+
+![Caption for the picture.](odds.png)
+
+## Risks and comparative parameters estimated
+
+The risks $\pi_1$ and $\pi_0$ are estimated by empirical incidence proportions $R_1=D_1/N_1$, and $R_0=D_0/N_0$.
+
+\bigskip
+Crude estimates of comparative parameters
+
+- **incidence proportion difference** $\quad \text{RD} = R_1 - R_0$
+- **incidence proportion ratio** $\quad \quad \quad \text{RR} = R_1/R_0$
+- **incidence odds ratio** $$\text{OR} = \frac{R_1/(1 - R_1)}{R_0/(1 - R_0)}$$
+
+**NB**. To remove *confounding*, the estimated must be adjusted for relevant *confounders*.
+
+
+## Example: OS vs. PN (cont'd)
+
+Crude estimates of true risk difference $\theta$, risk ratio $\phi$, and \\ odds ratio $\psi$ between OS and PN:
+
+\begin{eqnarray*}
+\RD & = & \frac{77}{350} - \frac{60}{350} = 0.22 - 0.171 = 
+        + {\bf 0.049} \ (+ 4.9\%)\\
+\RR & = & \frac{77/350}{60/350} = \frac{77/60}{350/350} = \frac{0.22}{0.171} = {\bf 1.283}\\
+\OR & = & \frac{77/273}{60/290} = \frac{0.22/(1 - 0.22)}{0.171/(1 - 0.171)} = {\bf 1.363}
+\end{eqnarray*}
+
+PN appears more successful than OS.
+
+Is this (a) true, (b) due to bias, or (c) due to chance?
+
+## Example: OS vs. PN (cont'd)
+
+Standard error of log(RR), 95\% error factor (EF) of RR, and 95\% CI for true risk ratio $\phi$:
+
+\begin{eqnarray*}
+\SEL & = & \sqrt{ \frac{1}{73} + \frac{1}{60} - \frac{1}{350} - \frac{1}{350}}\\
+     & = & {\bf 0.1547}\\
+     & { } & {  }\\
+\EF & = & \text{exp}\{1.96 \times 0.1547\}\\
+    & = & {\bf 1.3543}\\
+    & { } & {   }\\
+\CI & = & [1.2833/1.3543, 1.2833 \times 1.3543]\\
+    & = & [{\bf 0.9476}, {\bf 1.7380}].
+\end{eqnarray*}
+
+
+## Estimating comparative parameters in R
+
+- A multitude of R functions in several packages are readily available for point estimation and CI calculation using either ``exact'' or/and various approximative methods.
+\medskip
+- We shall here demonstrate the use of function `twoby2()` in the `Epi package`.  It applies the simple Wald approximations as described above, but for 
+  + risk difference: the Newcombe method is used, and 
+  + odds ratio: the `exact` conditional method is also available.
+  
+- Hence, similar results are expected as obtained above.
+
+## Use of function `twoby2()`
+
+- Loading the `Epi package`:
+```{r}
+library(Epi)
+```
+- Reading the counts of the 2 x 2-table into a matrix: 
+
+```{r}
+counts <- c(77, 273, 60, 290)
+tab <- matrix( counts, nrow=2, byrow=T)
+```
+
+- Viewing the contents of the matrix/table: 
+```{r,comment=NA}
+tab
+```
+## Make 2 by 2 table
+- Calling the function with `tab` as its argument: 
+
+\tiny
+
+```{r, comment=NA}
+twoby2(tab)
+```
+
+\normalsize
+
+## Analyses based on binary regression model
+
+Crude estimates and CIs for the comparative parameters can also be obtained by fitting appropriate **binary regression models** for the numbers $D_j$ or proportions $R_j$.
+
+Special cases of **generalized linear models** (GLM) with
+
+- (i) **random part**: $D_j$ is assumed to obey the binomial distribution or {\bf family} with index $N_j$ and probability $\pi_j$,
+- (ii) **systematic part**: **linear predictor** $\eta_j = \alpha + \beta X_j$, in which $X_j = 0$ for unexposed and $X_j = 1$ for exposed, 
+- (iii) **link function**: $g(.)$ that connects the probability $\pi_j$ and the systematic part $\eta_j$ by: $$g(\pi_j) = \eta_j = \alpha + \beta X_j$$
