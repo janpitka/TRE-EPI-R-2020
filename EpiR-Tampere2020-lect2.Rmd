@@ -1,0 +1,96 @@
+---
+title: "Untitled"
+author: "hugyu"
+date: "27 1 2020" 
+output:
+  beamer_presentation:
+    includes:  
+         in_header: beamer_header.tex
+---
+
+## Contents
+
+
+- Binary outcomes and proportions 
+\medskip
+- Comparative parameters of risks and their estimation 
+\medskip
+- Binomial regression models and comparative parameters
+\medskip
+- Adjustment for confounding and evaluation of modification by binomial regression 
+
+
+Main R functions covered:
+
+- `twoby2()` (Epi package)
+- `glm()`
+- `ci.lin()` (Epi package)
+
+## Outcomes in epidemiologic research
+
+Epidemiologic studies address the occurrence of diseases and other health related phenomena:
+
+- (a) cross-sectional: **prevalence** of diseases, 
+- (b) longitudinal: disease **incidence**, and mortality
+
+Often we want to compare the prevalence or incidence of disease between two groups defined by a binary *risk factor X*
+
+- *X* = 1: `exposed` *X* = 0: `unexposed`
+
+## Types of outcome variables
+
+- *Binary* (0/1) variables at individual level
+  + disease *status* at a *time point* 
+  +  *change* of status, *event* or *transition* 
+     ({\it e.g.} from healthy to diseased) 
+  
+- *Proportions* at group level
+  + prevalence 
+  + incidence proportion or cumulative incidence,
+- *Rates* of events
+  + incidence or mortality rate (per 1000 y)
+  +  car accidents (per million km)
+
+- *Time* to event
+  + survival time (often censored)
+
+## Incidence and prevalence proportions}
+
+- **Incidence proportion** ($R$) of a binary (0/1) outcome (disease,
+death etc.) over a fixed risk period is defined 
+$$
+ R = {D\over N} 
+  = \frac{ \mbox{number of new cases during period} }
+         { \mbox{size of population-at-risk at start} }  
+$$
+Also called {\bf cumulative incidence} (or even ``risk'').\\
+ \medskip
+**NB**. This formula requires complete follow-up, i.e.
+no {\it censorings}, and absence of {\it competing risks}.
+\bigskip
+-  **Prevalence (proportion)** $P$ of disease
+at time point $t$ 
+$$ P 
+    = {\mbox{no. of existing cases at } t \over 
+   \mbox{total population size at } t } . 
+$$
+
+
+## Two-group comparison
+
+- Binary risk factor $X$: exposed vs. unexposed.
+- Summarizy results from cohort study with fixed risk period and no losses:
+
+\begin{center}
+\begin{tabular}{cccc} \hline
+Exposure         &        Cases        &    Non-cases    &    Group size\\ \hline
+      yes        &            $D_{1}$ &        $C_{1}$  &    $N_{1}$  \\
+      no         &            $D_{0}$  &        $C_{0}$  &    $N_{0}$\\ \hline
+    total        &           $D_{\+}$  &        $C_{\+}$  &   $N_{\+}$\\ \hline
+\end{tabular}
+\end{center}
+
+- Incidence proportions in the two exposure groups
+$$ R_1 = \frac{D_1}{N_1}, \qquad
+   R_0 = \frac{D_0}{N_0} . $$ 
+- These are crude *estimates* of the true *risks* $\pi_{1}$, and $\pi_{0}$ of outcome in the two exposure categories.

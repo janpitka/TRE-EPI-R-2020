@@ -1,9 +1,12 @@
 ---
-title: "Statistical Methods in Cancer Epidemiology using R"
-author: "Janne Pitkäniemi and Karri Seppä"
-date: "Tampere University, Faculty of Social Sciences  Feb 10 - Mar 30,  2020"
-institute: "Finnish Cancer Registry, Finland,   
- janne.pitkaniemi@cancer.fi>,karri.seppa@cancer.fi"
+title: 
+- Statistical Methods in Cancer Epidemiology using R
+author: 
+- \textbf{Janne Pitkäniemi and Karri Seppä}  \newline \newline
+- Faculty of Social Sciences, University of Tampere  \newline
+- Finnish Cancer Registry  \newline  \newline
+date: "Feb 10 - Mar 30,  2020"
+institute: "janne.pitkaniemi@cancer.fi>,karri.seppa@cancer.fi"
 output: beamer_presentation
 ---
 
