@@ -236,3 +236,146 @@ Special cases of **generalized linear models** (GLM) with
 - (ii) **systematic part**: **linear predictor** $\eta_j = \alpha + \beta X_j$, in which $X_j = 0$ for unexposed and $X_j = 1$ for exposed, 
 - (iii) **link function**: $g(.)$ that connects the probability $\pi_j$ and the systematic part $\eta_j$ by: $$g(\pi_j) = \eta_j = \alpha + \beta X_j$$
 
+
+## Link functions and comparative parameters
+
+General model: $g(\pi_j) = \alpha + \beta X_j$ for the risks by binary $X$
+
+- **identity** link: $g(\pi_j) = \pi_j = \alpha + \beta X_j$:\\
+      $\Rightarrow \beta=\pi_1-\pi_0=\theta$, \\
+      = \underline{risk difference} btw $X_j=1$ and $X_j=0$
+      \medskip
+- **logarithmic** link: $g(\pi_j) = log(\pi_j)$\\
+$\Leftrightarrow \pi_j=\text{exp}(\alpha + \beta X_j)=e^{\alpha}e^{\beta X_j}$\\
+$\Rightarrow \beta= \text{log}(\pi_1)-\text{log}(\pi_0)= \text{log}(\phi)$, \\
+$\Rightarrow e^{\beta}=\phi$ = \underline{risk ratio} btw exposed and unexposed,
+\medskip
+- **logit** link: $g(\pi_j)=\text{log}[\pi_j/(1-\pi_j)]$
+$$\Leftrightarrow \quad \pi_j=\frac{1}{1+\text{exp}\{-(\alpha + \beta X_j)\}}=\text{expit}(\alpha + \beta X_j)$$
+
+
+## Logit model for odds ratio
+
+Substituting logit function for $g(.)$ and values of $X_j$ we get
+
+\begin{eqnarray*}
+\text{log}\left(\frac{\pi_0}{1-\pi_0}\right) & = & \alpha = \text{baseline logit}\\
+\text{log}\left(\frac{\pi_1}{1-\pi_1}\right) & = & \alpha + \beta.
+\end{eqnarray*}
+This implies
+\begin{eqnarray*}
+\pi_0 & = & \frac{1}{1+\text{exp}(-\alpha)}, \quad \pi_1 = \frac{1}{1+\text{exp}\{-(\alpha+\beta)\}},\\
+\beta & = & \text{log}\left\{\frac{\pi_1/(1-\pi_1)}{\pi_0/(1-\pi_0)}\right\}\\
+e^{\beta} & = & \frac{\pi_1/(1-\pi_1)}{\pi_0/(1-\pi_0)} = \psi = \text{\underline{odds ratio} btw exp'd and unexp'd.}
+\end{eqnarray*}
+
+## Fitting binary regression models in R
+
+Function `glm()`
+
+- estimation method: **maximum likelihood** (ML),computation algorithm: IWLS.
+
+Key arguments of `glm()`:
+
+- model formula: *response* $\sim$ expression of regressors
+
+- `weights` = group sizes $N_j$ when proportions $R_j$ are given as the response (outcome) variable,
+\small
+-  `family = binomial(link = 'log')`, if risk ratio,\newline
+      `family = binomial(link = 'logit')`, if odds ratio, \newline
+      `family = binomial(link = 'identity')`, if risk diff'ce \newline
+      $\qquad$ is the parameter of interest.
+\normalsize      
+
+## Example - Colorectal screenning RHS study
+
+![Caption for the picture.](CRC_FIN.png)
+
+## Example - data to R
+
+CRC parient mortality between arms
+
+- two observations (one for each treatment group),\medskip
+- three variables: 
+  + `treat` = arm, with values 1 = Screen, 0 = control,
+  + `d` = number of CRC (patient) deaths $D_j$, 
+  + `npat` = number of patients $N_j$,
+  
+- variable vectors defined:
+\small
+```{r,comment=NA}
+treat <- c(0, 1)
+fail <- c(190, 202)
+npat <- c(811, 903)
+prop <- fail/npat
+c(prop*100,prop[2]/prop[1])
+```
+\normalsize
+
+## Estimation of risk ratio
+ 
+- Defining the *model object*: 
+\small
+```{r}
+RRmodel <- glm( prop ~ treat, family=binomial(link='log'), weights=npat)
+```
+\normalsize
+
+- Estimation results extracted by function `ci.lin()` in `Epi`\newline
+(two columns of the whole output omitted for clarity)
+\small
+\normalsize
+```{r,echo=TRUE,comment=NA}
+library(Epi)
+round( ci.lin(RRmodel, Exp=T)[, -(3:4)], 4)
+```
+- The estimate of $\beta$ is $\widehat\beta = -0.0462 = \text{log}(0.9548)$, and that of mortality (ratio) ratio $\phi$ is $\RR = \text{exp}(-0.0462) = 0.9548$.
+- Estimate of $\alpha$ is 
+$\widehat\alpha = -1.4512 = \text{log}(0.2342787) = \text{log}(R_0)$.
+
+## Estimation of odds ratio
+
+\small
+```{r}
+ORmodel <- glm( prop ~ treat, 
+       fam = binomial(link='logit'), weights=npat)
+```
+```{r,comment=NA}
+round( ci.lin(ORmodel, Exp=T)[, -(3:4)], 4)
+```
+\normalsize
+
+- The estimate of $\beta$ is $\widehat\beta = -0.0599 = \text{log}(0.9418)$, and the estimated $\psi$ is $\text{OR} = \text{exp}(-0.0599) = 0.9418$.
+- The estimate of $\alpha$ is $\widehat\alpha -1.1843 = \text{log}(0.3060)$, in which\newline
+      $0.3060 = 0.2342787/(1 - 0.2342787)$ is the estimated\newline
+      baseline odds $R_0/(1 - R_0)$.
+      
+## Estimation of risk difference
+
+\small
+```{r}
+ RDmodel <- glm( prop ~ treat, 
+    fam=binomial(link='identity'), w=npat)
+```
+
+```{r,comment=NA}
+round( ci.lin(RDmodel), 3)
+```
+\normalsize
+- Again, same results obtained as with *e.g.*  `twoby2()`,
+  although CIs are here based on Wald statistic.
+- **NB**. Fitting binomial model with this link easily fails with more complicated models, 
+      especially involving continuous variables.
+
+## Same with twoby2
+
+\small
+```{r,comment=NA}
+counts<-c(fail[2],npat[2]-fail[2],fail[1],npat[1]-fail[1])
+counts
+```
+\scriptsize
+```{r, comment=NA}
+twoby2(matrix( counts, nrow=2, byrow=T))
+```
+\normalsize
