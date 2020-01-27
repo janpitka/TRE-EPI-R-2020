@@ -235,3 +235,4 @@ Special cases of **generalized linear models** (GLM) with
 - (i) **random part**: $D_j$ is assumed to obey the binomial distribution or {\bf family} with index $N_j$ and probability $\pi_j$,
 - (ii) **systematic part**: **linear predictor** $\eta_j = \alpha + \beta X_j$, in which $X_j = 0$ for unexposed and $X_j = 1$ for exposed, 
 - (iii) **link function**: $g(.)$ that connects the probability $\pi_j$ and the systematic part $\eta_j$ by: $$g(\pi_j) = \eta_j = \alpha + \beta X_j$$
+
