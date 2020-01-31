@@ -1,0 +1,881 @@
+% typeset using LaTeX2e
+\documentclass[handout, 12pt]{beamer}
+% \documentclass[12pt]{beamer}
+%\mode<presentation>
+%{
+% \usetheme{Singapore}
+% \setbeamercovered{transparent}
+%}
+% making handouts
+%\usepackage[overlay]{textpos}
+%\usepackage{pgfpages}
+%\pgfpagesuselayout{4 on 1}[letterpaper, border shrink = 5mm]
+%\mode<presentation>{
+%  \setbeamercovered{invisible}
+%}
+% end of making handouts
+
+\usepackage[latin1]{inputenc}
+\usepackage[english]{babel}
+\usepackage{epsfig}
+\usepackage{rotating}
+\usepackage{graphicx}
+%\usepackage{mslapa}
+\usepackage{amsmath}
+%\usepackage[all]{xy}
+% \usepackage{amssymb,graphicx}
+%\input psfig.sty
+\usepackage{booktabs}
+\usepackage{graphpap}
+\usepackage{verbatim}
+%\usepackage{amsbsy}
+\graphicspath{{C:/Users/janne.pitkaniemi/Kingstontikku/figures/}}
+
+\setbeamertemplate{footline}[page number]
+\DeclareGraphicsExtensions{.pdf, .jpg}
+% \DeclareGraphicsExtensions{.eps}
+
+\newcommand{\Rlogo}[1]{\includegraphics[#1]{Rlogo}}
+
+ \input{usefulesa}
+
+% \newcommand{\R}{\bf \textsf{R}}
+\parskip\medskipamount
+
+
+
+\title{Epidemiologic Data Analysis using R\\
+Part 3: Basic analysis of rates}  % : \\ Analysis of Follow-up Studies}
+% \Rlogo{height=1em} }
+
+\author{Janne Pitk\"aniemi \\ (Esa L{\"a}{\"a}r{\"a})}
+
+\institute{Finnish Cancer Registry, Finland,   
+ \texttt{<janne.pitkaniemi@cancer.fi>} \\
+ (University of Oulu, Finland,   
+ \texttt{<esa.laara@oulu.fi>}) }
+
+\date{University of Tampere \\Faculty of Social Sciences \\ % University of Tampere/Postgraduate training,
+Feb 10- Mar 30  2020}
+
+
+%\begin{center} \Rlogo{height=2em} \end{center}
+
+\AtBeginSubsection[]
+{
+  \begin{frame}<beamer>
+    \frametitle{Outline}
+    \tableofcontents[currentsection,currentsubsection]
+  \end{frame}
+}
+
+%\beamerdefaultoverlayspecification{<+->}
+
+\begin{document}
+\definecolor{darkgreen}{rgb}{0,.5,0}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+
+
+%-------------------------------------------
+
+\begin{frame}
+\frametitle{Contents}
+\ \\
+\bi
+\item[1.] Person-time data, hazard and incidence rates, 
+\medskip
+\item[2.] Comparative parameters of rates and their estimation, 
+\medskip
+\item[3.] Poisson regression models and comparative parameters, 
+\medskip
+\item[4.] Adjustment for confounding and evaluation of modification by Poisson regression,
+\medskip
+\item[5.] Goodness-of-fit evaluation.
+\ei
+Main R functions covered:
+\bi
+\item {\tt glm()}
+\item tools for extracting results from a {\tt glm} model object
+\ei
+\end{frame}
+
+%---------------------------------------
+
+\begin{frame}[fragile]
+ \frametitle{Person-time data and incidence rates}
+\ \\
+Summarized data on
+outcome from cohort study, in which two exposure groups, as to binary risk factor $X$, have been followed-up over individually variable times.
+\begin{center}
+\begin{tabular}{ccc}
+\toprule
+Exposure to         &     Number of       &    Person-\\ 
+ risk factor        &        cases        &        time\\
+\midrule
+      yes        &                        $D_{1}$ &        $Y_{1}$  \\
+      no         &                        $D_{0}$  &        $Y_{0}$\\
+\midrule    
+     total        &                        $D_{\+}$  &  $Y_{\+}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+Empirical \textbf{incidence rates} by exposure group:
+$$ I_1 = {D_1}/{Y_1}, \qquad
+    I_0 = {D_0}/{Y_0}. $$ 
+These provide estimates for the true {\bf hazards} 
+(or hazard rates) $\lambda_1$ and $\lambda_0$ assumed constant within exposure categories.
+\end{frame} 
+
+%---------------------------
+\begin{frame}[fragile] \frametitle{Hazards and their comparison}
+\ \\
+Parameters of interest:
+\bi
+\item[(i)] \textbf{hazard ratio}
+$$ \rho = \frac{\lambda_1}{\lambda_0} = 
+\frac{ \mbox{hazard among exposed} } { \mbox{hazard among unexposed} }.
+$$
+\medskip
+\item[(ii)] \textbf{hazard difference}
+$$\delta = \lambda_1 - \lambda_0$$
+\ei
+Null hypothesis $H_0: \rho = 1 \Leftrightarrow \delta = 0$\\ $\Leftrightarrow$  exposure has no effect.
+\end{frame} 
+
+%-----------------------------------------
+
+\begin{frame}[fragile] \frametitle{Estimation of hazard ratio}
+\ \\
+Point estimator of true hazard ratio $\rho$:
+empirical\\ {\bf incidence rate ratio} (IR)
+$$  \widehat\rho = \mbox{IR}  =  \frac{I_1}{I_0}
+    = \frac{ D_{1} / Y_{1} }{ D_{0} / Y_{0} } 
+    = \frac{ D_{1} / D_{0} }{ Y_{1} / Y_{0} }.         
+$$
+{\bf NB.} The last form is particularly useful:\\ 
+ = {\bf exposure odds ratio} (EOR).
+
+Standard error of log(IR),  95\% {error factor} \& 95\% CI for 
+$\rho$:
+\bes
+ \SEL & = & \sqrt{ \frac{1}{D_1} + \frac{1}{D_0} } \\  
+ \EF & = & \exp \{ 1.96 \times \SEL \} \\  
+ \CI & = & [ \mbox{IR} / \EF ,\ \mbox{IR} \times \EF ] . 
+\ees
+{\bf NB.} Random error depends inversely on numbers of cases.
+\end{frame} 
+
+% --------------------------------------
+
+\begin{frame}[fragile] \frametitle{Estimation of hazard difference}
+\ \\
+Point estimator of true hazard difference $\delta$:
+empirical \\ {\bf incidence rate difference} (ID)
+$$  \widehat\delta = \mbox{ID}  =  I_1 - I_0
+    = \frac{ D_{1}}{ Y_{1} } - \frac{ D_{0}}{ Y_{0} } 
+$$
+Standard error of ID,  95\% {error margin} \& 95\% CI for 
+$\delta$:
+\bes
+ \SE & = & \sqrt{ \frac{I_1^2}{D_1} + \frac{I_0^2}{D_0} } \\  \\
+ \EM & = & 1.96 \times \SE \\  \\
+ \CI & = & [ \mbox{ID} - \EM ,\ \mbox{ID} + \EM ] . 
+\ees
+NB. Random error again depends inversely on no. of cases.
+
+
+\end{frame}
+
+%----------------------------------------------------
+
+
+\begin{frame}[fragile]
+ \frametitle{Example. British doctors' study (Doll \& Hill '66)} 
+ 
+CHD mortality in males
+by smoking and age.\\  Cases ($D$),  person-years ($Y$), and mortality rates ($I$ per 
+$10^4$ y).
+\begin{center}
+\begin{tabular}{@{\extracolsep{6pt}}lrrrrrr}
+\toprule
+\multicolumn{1}{c}{ } & 
+\multicolumn{3}{c} {Smokers}         &        
+\multicolumn{3}{c} {Non-smokers}  \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+Age(y) & $D$ & $Y$ &    $I$ & $D$ & $Y$ &  $I$ \\
+\midrule
+35-44  & 32  & 52407  & 6   & 2   & 18790 & 1 \\
+45-54  & 104 & 43248  & 24  & 12  & 10673 & 11 \\
+55-64  & 206 & 28612  & 72  & 28  & 5710  & 49 \\
+65-74  & 186 & 12663  & 147 & 28  & 2585  & 108 \\
+75-84  & 102 & 5317   & 192 & 31  & 1462  & 212 \\
+\midrule
+Total  & 630 & 142247 & 44  & 101 & 39220 &  26  \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame} 
+
+% --------------------------------------
+
+\begin{frame}[fragile] \frametitle{Example (cont'd). }
+
+Crude incidence rates: \\
+$\qquad I_1 = 630/142247 \ \mbox{y} = 44.3$ per $10^4$ y, and\\
+$\qquad I_0 = 101/39220 \ \mbox{y}\ = 25.8$ per $10^4$ y. 
+
+Crude estimate of overall hazard ratio $\rho$ with SE, etc.
+\bes
+\widehat\rho      & = & \mbox{IR} = \frac{ 44.3 }{ 25.8 } = {\bf 1.72} \\ \\
+\SEL & = & \sqrt{ \frac{1}{630} +  \frac{1}{101} } = {\bf 0.1072} \\ \\
+              \EF & = & \exp(1.96\times 0.1072) =  {\bf 1.23}
+\ees
+95\% CI for $\rho$:
+$ [ 1.72/1.23, \ 1.72\times 1.23 ]= [{\bf 1. 39},\ {\bf 2.12}] $ \\ 
+
+Two-tailed $P < 0.001 $.
+\end{frame} 
+
+
+% ------------------------------------------
+
+\begin{frame}[fragile] \frametitle{Poisson regression model for rate ratio}
+\ \\
+\bi
+\item {\it Random part}: Number of cases in exposure group $j = 0,1$
+$$ D_j \sim \mbox{Poisson}(\lambda_j Y_j) , $$
+where $\mu_j = \lambda_j Y_j$ = {\it expected number} of cases.
+\bigskip
+\item {\it Systematic part \& link function}:\\ linear predictor $\alpha + \beta X_j$ with {\it logarithmic} (log) link 
+$$ \log(\lambda_j) = \alpha + \beta X_j , $$
+equivalently on the original hazard scale:
+$$ \lambda_j = \exp(\alpha + \beta X_j) . $$
+\ei
+\end{frame} 
+
+
+% ------------------------------------------
+
+\begin{frame}[fragile] \frametitle{Poisson model for rate ratio (cont'd)}
+\ \\
+Interpretation,
+\bi
+\item[{ }] $X_j=$ $\begin{cases}
+		1  & \text{if exposed } (j=1), \\
+            0  & \text{if unexposed } (j=0),\\
+		\end{cases}$
+		\medskip
+\item[{ }] $\alpha=$  $\log(\lambda_0)$, log-baseline rate,
+\medskip
+\item[{ }] $\beta=$ $\log(\rho) = \log(\lambda_1/\lambda_0)$, 
+                logarithm of true hazard ratio,
+     \medskip           
+\item[{ }] $e^{\beta}=$ $\rho$ = true hazard ratio.
+\ei
+Special case of generalized linear models!
+\end{frame} 
+
+%----------------------------------------------------------------------
+
+\begin{frame}[fragile] \frametitle{Example.  Crude analysis of CHD mortality in R}
+\ \\
+A ready data frame contains
+\bi
+\item four variables: 
+  \bi
+   \item[ ] {\tt age} = age group -- a {factor} with 5 levels,
+   \medskip
+   \item[ ]
+        {\tt smok} = smoking: 1 = ``yes'', 0 = ``no'',\medskip
+   \item[ ]        
+        {\tt d} = number of cases, \medskip
+   \item[ ]
+        {\tt y} = person-years.
+  \ei
+\item 10 observations (one for each age-smoking combination).
+\ei
+\end{frame} 
+
+%----------------------------------------------------------------------
+
+\begin{frame}[fragile] \frametitle{Example.  Analysis of CHD rates (cont'd)}
+\ \\
+\begin{verbatim}
+> data.frame(age, smok, d, y, rate)
+     age smok   d     y  rate
+ 1 35-44    1  32 52407   6.1
+ 2 35-44    0   2 18790   1.1
+ 3 45-54    1 104 43248  24.0
+ 4 45-54    0  12 10673  11.2
+ 5 55-64    1 206 28612  72.0
+ 6 55-64    0  28  5710  49.0
+ 7 65-74    1 186 12663 146.9
+ 8 65-74    0  28  2585 108.3
+ 9 75-84    1 102  5317 191.8
+10 75-84    0  31  1462 212.0
+ 
+\end{verbatim}
+\end{frame} 
+
+%-----------------------------
+\begin{frame}[fragile] \frametitle{Fitting Poisson model for crude rate ratio}
+\ \\
+Poisson model with log-link (default) for crude rates
+\begin{verbatim}
+> m1 <- glm(d/y ~ smok, family=poisson(), weights=y)
+\end{verbatim}
+Output (shortened) using {\tt summary()} method
+\small
+\begin{verbatim}
+> summary(m1)
+Coefficients:
+            Estimate Std. Error z value Pr(>|z|)
+(Intercept) -5.96182    0.09944 -59.953  < 2e-16
+smok         0.54222    0.10713   5.062 4.16e-07
+
+Null deviance:     935.07 on 9 degrees of freedom
+Residual deviance: 905.98 on 8 degrees of freedom
+\end{verbatim}
+\normalsize
+\end{frame} 
+
+%-----------------------------
+\begin{frame}[fragile] 
+\frametitle{Fitting crude rate ratio model (cont'd)}
+\ \\
+Main results: 
+\bi
+\item[$\widehat\alpha$] = $ -5.96 = \log(25.8/10^4 \mbox{ y}), \quad$ (SE = 0.10),
+\item[$\widehat\beta$] = $0.54 = \log(1.72), \quad$ (SE = 0.11)
+\ei
+
+Function {\tt ci.lin()} transforms results to ratio scale
+\small
+\begin{verbatim}
+> round(ci.lin(m1, Exp=T)[, -(3:4)], 4 )
+           Estimate StdErr exp(Est.)   2.5%  97.5%
+(Intercept) -5.9618 0.0995    0.0026 0.0021 0.0031
+smok         0.5422 0.1072    1.7198 1.3940 2.1219
+\end{verbatim}
+\normalsize
+Compare the results with those obtained above using simple
+estimation \& SE formulas.
+\end{frame} 
+
+%-------------------------------
+\begin{frame}[fragile] \frametitle{Fitting crude rate ratio model (cont'd)}
+\ \\
+The Poisson model above can also be fitted as follows:
+  
+\verb|> glm(d ~ smok, fam =poisson(), offset=log(y))|
+
+\bigskip
+Here {\tt offset} refers to the logarithm of person-years {\tt y} in formula for expected 
+numbers of cases $\mu_j = \lambda_j \times Y_j$:
+\bes \log(\mu_j) & = & \log(\lambda_j Y_j)
+                   =   \log(Y_j) + \log(\lambda_j) \\ 
+    & = & \log(Y_j) + \alpha + \beta X_j , 
+\ees
+
+$\log(Y_j)$ is an {\bf offset} term in the linear predictor, meaning that
+it has a fixed value 1 for the regression coefficient. 
+\end{frame} 
+
+
+%------------------------------------------
+
+\begin{frame}[fragile] \frametitle{Stratified analysis}
+\ \\%[-30pt]
+
+Stratification of cohort data with person-time\\ -- 
+at each level $k$ of covariate $Z$ results are summarized:
+\begin{center}
+\begin{tabular}{ccc}
+\toprule
+Exposure to & Number of         & Person- \\
+risk factor & cases       & time\\
+\midrule
+ yes        & $D_{1k}$    & $Y_{1k}$ \\
+ no         & $D_{0k}$    & $Y_{0k}$ \\
+\midrule    
+Total       & $D_{\+ k}$  & $Y_{\+ k}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+Stratum-specific rates by exposure group: 
+$$ I_{1k}  = \frac{ D_{1k} }{ Y_{1k} } , \qquad
+   I_{0k}  = \frac{ D_{0k} }{ Y_{0k} } .$$
+\end{frame} 
+
+%------------------------------------------
+
+\begin{frame}[fragile] \frametitle{Stratum-specific comparisons}
+\ \\
+Let $\lambda_{jk}$ be true rate for exposure group $j$ ($j=0,1)$\\ 
+and stratum $k$ ($k=0, \dots, K$). 
+Let also
+$$ \rho_k = \frac{ \lambda_{1k} } { \lambda_{0k} }, \qquad \delta_k = \lambda_{1k} - \lambda_{0k}$$
+
+be the rate ratios and rate differences between the\\ exposure groups 
+in stratum $k$.
+
+Two simple models assuming homogeneity:
+\bi
+\item common rate ratio: $\rho_k = \rho$ for all $k$,
+\item common rate difference: $\delta_k = \delta$ for all $k$.
+\ei
+Only one of these can in principle hold.  However, almost always neither homogeneity assumption is exactly true.
+\end{frame} 
+
+ 
+%-------------------------------
+\begin{frame}[fragile]
+ \frametitle{Example. British male doctors (cont'd)} 
+
+\ \\
+CHD mortality rates (per $10^4$ y) and numbers of cases ($D$)
+by age and cigarette smoking.
+
+\medskip
+Mortality rate differences (ID) and ratios (IR) in age strata.
+\begin{center}
+\begin{tabular}{@{\extracolsep{6pt}}lrrrrrr}
+\toprule
+& \multicolumn{2}{c} {Smokers} &        
+\multicolumn{2}{c} {Non-smokers} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+Age (y) & rate & ($D$) & rate & ($D$) & ID &  IR         \\
+\midrule
+35-44  & 6.1  & (32)  & 1.1  & (2)   & 5  &  5.7 \\
+45-54  & 24   & (104) & 11   & (12)  & 13 &  2.1 \\
+55-64  & 72   & (206) & 49   & (28)  & 23 &  1.5 \\
+65-74  & 147  & (186) & 108  & (28)  & 39 &  1.4 \\
+75-84  & 192  & (102) & 212  & (31)  & $-$20 &  0.9 \\
+\midrule
+Crude  &  44  & (630) &  26  & (101) & 18 & 1.7 \\ 
+\bottomrule
+\end{tabular}
+\end{center}
+\end{frame} 
+
+%-------------------------------
+\begin{frame}[fragile] \frametitle{Example (cont'd).}
+\ \\ 
+\bi
+\item Both types of comparative parameter, rate ratios $\rho_k$ and rate differences $\delta_k$ appear heterogenous, because
+\bi
+\item ID increases by age -- at least up to 75 y,
+\item IR decreases by age.
+\ei
+\item Part of this observed heterogeneity may be due to random variation. 
+\item Yet, any single-parameter comparison by common rate ratio or rate difference  
+may not adequately capture the
+joint pattern of true rates.
+\ei
+
+$\quad \Rightarrow$ Effect modification must be evaluated.
+
+\end{frame} 
+
+%---------------------------------------------------------------------
+
+
+\begin{frame}[fragile] \frametitle{Rate ratio adjustment by Poisson model}
+\ \\
+Define Poisson regression model for
+\bi
+\item one binary exposure variable $X$ and 
+\item
+one categorical (polytomous)  factor $Z$.
+\ei
+{\it Random part}: No. of cases in exposure group $j$ $(j=0,1)$
+and covariate level $k$ $(k = 1, \dots, K)$ is
+$ D_{jk} \sim \mbox{Poisson}(\lambda_{jk} Y_{jk})$ 
+
+{\it Systematic part}: 
+$ \log(\lambda_{jk}) = \alpha + \beta X_j +
+  \gamma_k  , $
+where $X_j$ is (0/1),
+
+\bi
+\item[{ }] $\alpha=$ $\log(\lambda_{01})$ = log-baseline rate, 
+\item[{ }] $\gamma_k=$ $\log(\lambda_{jk}/\lambda_{j1})$,
+\item[{ }] $\beta=$ $\log(\rho) = \log(\lambda_{1k}/\lambda_{0k})$,
+\item[{ }] $e^{\beta}=$ $\rho$ = true rate ratio for the effect of exposure to $X$.
+\ei
+
+{\it How do we read this?}
+\end{frame} 
+
+%----------------------------------------------
+
+\begin{frame}[fragile] 
+\frametitle{Implications of model definition}
+
+\bi
+\item homogeneity of true rate ratio $\rho_k = \rho$ for $X$ \\
+ across levels of $Z$ is 	assumed,
+	\medskip 
+\item inclusion of $Z$ leads to adjustment for $Z$ in estimating the common effect of $X$,
+\medskip 
+\item $e^{\gamma_k}$ = rate ratio for level $k$ of $Z$ {\it vs.} level 1
+      is the same in both exposure groups ($j=0,1$) \\
+      $\Rightarrow$ homogeneity of
+      the effect of $Z$ is assumed, too.
+ \medskip     
+\item level $k=1$ is chosen as the {\it reference} level for $Z$\\ (like 
+	``unexposed'' is reference for $X$), 
+\medskip	
+\item before model fitting, binary {\it indicator variables} $Z_k$ 
+	for levels $k=1, \dots, K$ of $Z$ must be defined:
+	$$ Z_k  =\begin{cases}
+		   1, & \mbox{if observation belongs to level } k, \\
+               0, & \mbox{ otherwise}.
+		   \end{cases}
+	$$
+\ei 
+\end{frame} 
+
+
+%-----------------------------
+
+\begin{frame}[fragile] \frametitle{Example.  CHD in British doctors (cont'd)} 
+
+Factor {\tt age} has $5$ levels. \\
+Indicator variables for each age level are generated in R when defining the model, and the following model matrix is returned.
+\small
+\begin{verbatim}
+> cbind(data.frame(age), model.matrix(m2))
+     age (I't) age45-54 age55-64 age65-74 age75-84 smok
+ 1 35-44    1         0        0        0        0    1
+ 2 35-44    1         0        0        0        0    0
+ 3 45-54    1         1        0        0        0    1
+ 4 45-54    1         1        0        0        0    0
+ 5 55-64    1         0        1        0        0    1 
+ 6 55-64    1         0        1        0        0    0
+ 7 65-74    1         0        0        1        0    1
+ 8 65-74    1         0        0        1        0    0
+ 9 75-84    1         0        0        0        1    1
+10 75-84    1         0        0        0        1    0
+\end{verbatim}
+\normalsize
+\end{frame} 
+
+
+%-----------------------------
+
+\begin{frame}[fragile] \frametitle{Fitting the adjustment model} 
+\ \\
+Define a new model object {\tt m2} with {\tt age} and {\tt smok}
+\small
+\begin{verbatim}
+> m2 <- glm( d/y ~ age + smok,
++            family=poisson(link=log), weights=y)}
+> summary(m2)
+
+Coefficients:            
+                Estimate Std. Error z value Pr(>|z|)
+(Intercept)      -7.9193     0.1917 -41.301  < 2e-16
+age 45-54         1.4840     0.1951   7.607 2.81e-14
+age 55-64         2.6275     0.1837  14.302  < 2e-16
+age 65-74         3.3505     0.1848  18.132  < 2e-16
+age 75-84         3.7001     0.1922  19.251  < 2e-16
+smok              0.3545     0.1074   3.302  0.00096
+
+Residual deviance: 12.132 on 4 degrees of freedom
+\end{verbatim}\normalsize
+\end{frame} 
+
+%--------------------------
+
+\begin{frame}[fragile] \frametitle{Fitting adjustment model (cont'd)}
+\ \\
+Results on the ratio scale
+\begin{verbatim}
+> round(ci.lin(m2, Exp=T)[, 5:7], 4 )
+               exp(Est.)    2.5%   97.5%
+(Intercept)       0.0004  0.0002  0.0005
+age 45-54         4.4106  3.0091  6.4648
+age 55-64        13.8392  9.6546 19.8375
+age 65-74        28.5168 19.8524 40.9627
+age 75-84        40.4512 27.7541 58.9571
+smok              1.4255  1.1550  1.7594
+\end{verbatim}
+
+$\Rightarrow$ Age-adjusted rate ratio [95\% CI] for smoking:
+$$\widehat \rho = {\bf 1.43} \ [{\bf 1.16}, {\bf 1.76}]$$
+
+\end{frame} 
+
+%-------------------------------------------------------------------
+
+\begin{frame}[fragile] \frametitle{Fitted values \& residuals}
+
+\ \\
+From the estimated coefficients we can calculate \\
+ {\bf fitted}
+ linear predictors $\widehat \eta_{jk}$, {hazards} $\widehat \lambda_{jk}$ 
+and {numbers} $\widehat \mu_{jk}$:
+\bes 
+  \widehat \eta_{jk} & = & \widehat\alpha + \widehat\beta x + \widehat\gamma_k \\
+   \widehat \lambda_{jk} & = & \mbox{exp}(\widehat \eta_{jk}), \quad \widehat\mu_{jk}     =  \widehat\lambda_{jk} Y_{jk} 
+\ees
+In R the two first can be extracted directly from the\\ fitted model object {\tt m2}:
+\small
+\begin{verbatim}
+   > fit.eta <- m2$linear.predictor
+   > fit.rate <- fitted(m2); fit.mu <- y*fit.rate
+\end{verbatim}
+\normalsize
+{\bf NB}.  If count {\tt d} is declared as response with {\tt log(y)} as offset, then {\tt fitted()}
+returns the fitted numbers of cases $\widehat \mu_{jk}$.
+\end{frame} 
+
+%-----------------------
+\begin{frame}[fragile] \frametitle{Fitted values \& residuals (cont'd)}
+
+\ \\ 
+{\bf Deviance residual} for cell $jk$ ({\tt resid(m2)} in R):
+$$ d_{jk}  =  \mbox{sign}(Y_{jk} - \widehat\mu_{jk}) 
+                    \times 
+                   \sqrt{ 2 \left\lbrace
+                         Y_{jk} \log \left( \frac{ Y_{jk} }{ \widehat\mu_{jk} } \right)
+                         - (Y_{jk} - \widehat\mu_{jk}) \right\rbrace } 
+$$
+{\bf Pearson residual} ({\tt resid(m2, type="pearson")}):
+$$ r_{jk} = \frac{ Y_{jk} -  \widehat\mu_{jk} }
+          {\sqrt{  \widehat\mu_{jk} } } . $$
+Small value of either residual\\  
+$\rightarrow$ consistency of observation with model.
+
+``Large'' (in absolute value) residual\\
+$\rightarrow$ lack of fit for that cell.
+\end{frame} 
+
+%----------------
+\begin{frame}[fragile] \frametitle{Example.  Fitted values \& residuals}
+ 
+\small
+\begin{verbatim}
+> data.frame(age,smok,rate,fit.rate,d,fit.mu,res.D,res.P)
+     age smok  rate fit.rate   d fit.mu res.D res.P
+1  35-44    1   6.1      5.2  32   27.3  0.90  0.93
+2  35-44    0   1.1      3.6   2    6.8 -2.18 -1.85
+3  45-54    1  24.0     22.9 104   99.0  0.51  0.51
+4  45-54    0  11.2     16.0  12   17.1 -1.31 -1.24
+5  55-64    1  72.0     71.7 206  205.1  0.05  0.05
+6  55-64    0  49.0     50.3  28   28.7 -0.14 -0.14
+7  65-74    1 146.9    147.8 186  187.2 -0.09 -0.09
+8  65-74    0 108.3    103.7  28   26.8  0.23  0.23
+9  75-84    1 191.8    209.7 102  111.5 -0.91 -0.90
+10 75-84    0 212.0    147.1  31   21.5  1.92  2.05
+\end{verbatim}
+\normalsize
+
+NB! Fitted rate ratios between smokers and non-smokers:
+$$ \frac{5.2}{3.6} = \dots = \frac{209.7}{147.1} = 1.43 \ \text{at each age level}$$
+\end{frame} 
+
+%---------------------------
+\begin{frame}[fragile]
+ \frametitle{Summary goodness-of-fit statistics}
+\ \\ 
+\bi
+   \item {\bf Deviance} (Dev)  
+         = sum of squares of deviance residuals,
+   \item {\bf Pearson's} $X^2$ (chi-square) 
+          = s.s. of Pearson residuals  
+\ei
+Assume that 
+\bi
+\item the model is ``true'', and 
+\item the data are not {\it sparse}, i.e. numbers of cases in each line
+      of the (grouped) data matrix are sufficiently big.
+\ei
+Under these assumptions 
+\bi
+\item  residuals $d_{jk}$ and $r_{jk}$ all approximately Normal(0,1),
+\item  Both Dev and $X^2$ are approximately 
+       $\chi^2$-distributed with 
+       {\it degrees of freedom} (df) being equal to the \\
+       {\it residual} df = no. of obs -- no. of coeff's 
+\item Expected value of these statistics 
+      = residual df.
+\ei
+\end{frame} 
+%-------------------------
+\begin{frame}[fragile] \frametitle{Goodness of fit (cont'd)}
+\ \\
+In our example 
+\bi
+\item ``large'' residuals in extreme age groups,
+\item $X^2$ and Dev 2.8 to 3 times higher than df.
+\ei
+$\rightarrow$ Some lack of fit with assumed model.
+
+($P$-values: P($X^2$ $>$ 11.2) = 0.025, and \\
+  P(Dev $>$ 12.1) = 0.017)
+\end{frame} 
+%-------------------------
+\begin{frame}[fragile]
+ \frametitle{Possible causes for lack of fit}
+\bi
+\item Unrealistic random part (Poisson)?
+\medskip
+\item Misspecified systematic part?
+      \bi
+      \item[--] Wrong functional form for effects? \medskip
+      \item[--] Missing important risk factors? \medskip
+      \item[--] Failure to take into account {effect modification}
+       or ``interaction''.
+      \ei
+\ei
+In this example the last possibility is very likely:  \\ 
+the rate ratios are clearly heterogenous. 
+
+\medskip
+Yet, inclusion of 4 interaction parameters
+would lead to a saturated model.
+\end{frame} 
+
+
+%-----------------------------
+
+\begin{frame}[fragile] \frametitle{Continuous covariates}
+\ \\ 
+Stratified analysis is adequate with
+\bi
+\item qualitative exposure factor with few levels,
+\item few qualitative covariates with few levels.
+\ei
+Effects of continous factors can often be 
+described by smooth functions with small number of parameters.
+
+Stratification requires categorization of 
+continuous variables and level specific parameters 
+
+$\Rightarrow$ loss of efficiency.
+\end{frame} 
+
+%-----------------------------
+
+\begin{frame}[fragile] \frametitle{Continuous covariates (cont'd)}
+\ \\
+Regression models can accommodate functions of 
+continuous variables 
+\bi
+\item[$+$] more parsimonious models, \medskip 
+\item[$+$] greater flexibility in modelling, \medskip
+\item[$-$] more opportunities for misspecification,
+{\it i.e.} creation of ``wrong'' 
+models.
+\ei
+\end{frame} 
+
+%--------------------------------------------
+
+\begin{frame}[fragile] \frametitle{Example (cont'd)}
+\ \\
+Treat age as continuous variable taking midpoint of each ageband
+(40, 50, \dots, 80)
+as quantitative age value. 
+
+Include linear and quadratic term of age applying 
+\bi
+\item centering at 60 years, and 
+\item scaling, \textit{i.e.} division by 10 years
+\ei
+This is achieved by
+\small
+\begin{verbatim}
+   > A.L <- as.numeric(age)-3 
+   > A.Q <- A.L*A.L - 2
+\end{verbatim}
+\normalsize   
+\end{frame} 
+
+
+%--------------------------------------------
+
+\begin{frame}[fragile] \frametitle{Example (cont'd)}
+\ \\ 
+Model with linear and quadratic terms for age, and
+interaction between linear term of age and smoking:
+\small
+\begin{verbatim}
+> m3 <- glm( d/y ~ A.L + A.Q + smok + A.L:smok,
++           family=poisson( ), weights=y )
+> round(ci.lin(m3, Exp=T)[, -(3:4)], 4 )
+
+           Estimate StdErr exp(Est.)   2.5%  97.5%
+(Intercept) -5.8368 0.1213    0.0029 0.0023 0.0037
+A.L          1.1904 0.0923    3.2885 2.7441 3.9408
+A.Q         -0.1977 0.0274    0.8206 0.7778 0.8659
+smok         0.5183 0.1262    1.6792 1.3112 2.1505
+A.L:smok    -0.3075 0.0970    0.7352 0.6079 0.8893
+\end{verbatim}
+\normalsize
+Interpretation of parameters?
+
+\end{frame} 
+
+%-----------------------
+\begin{frame}[fragile] \frametitle{Example (cont'd)}
+\ \\
+Observed and fitted rates \& fitted 
+rate ratios between smokers and non-smokers
+in each ageband
+{\small
+\begin{verbatim}
+     age smok  rate fit.rate   d fit.mu res.D res.P
+1  35-44    1   6.1      5.6  32   29.3  0.44  0.44
+2  35-44    0   1.1      1.8   2    3.4 -0.83 -0.77
+3  45-54    1  24.0     24.7 104  106.8 -0.27 -0.27
+4  45-54    0  11.2     10.8  12   11.5  0.13  0.13
+5  55-64    1  72.0     72.8 206  208.3 -0.15 -0.15
+6  55-64    0  49.0     43.3  28   24.7  0.64  0.65
+7  65-74    1 146.9    144.4 186  182.9  0.23  0.23
+8  65-74    0 108.3    116.9  28   30.2 -0.41 -0.41
+9  75-84    1 191.8    192.9 102  102.6 -0.06 -0.06
+10 75-84    0 212.0    212.5  31   31.1 -0.01 -0.01
+\end{verbatim}
+\normalsize
+Residual Dev = 1.64  df = 5; The fit is excellent! 
+}
+\end{frame} 
+
+\begin{frame}
+
+\frametitle{Some closing remarks}
+\bi
+\item
+  Hazard differences can also be estimated by
+Poisson-modelling, because {\tt link='identity'}
+can be coupled with {\tt family=poisson}  in {\tt glm()}.
+\medskip
+\item
+  Poisson models can also be fitted on ungrouped data.
+Units of observations may even be shorter intervals of
+total individual follow-up times: 
+\bi
+\item
+Each member of the
+study population can contribute several separate
+time-slots as observational units. 
+\item
+More about time-splitting in the next lectures.
+\ei
+\item
+  With continuous covariates it may be difficult to keep
+hazards positive when the \textit{additive hazards}
+model with \texttt{link='identity'} is attempted to be fitted.
+\ei
+\end{frame}
+
+\end{document}
+%-----------------------------
+
