@@ -1,7 +1,7 @@
 ---
-title: "Untitled"
-author: "hugyu"
-date: "27 1 2020" 
+title: "Statistical Methods in Cancer Epidemiology using R"
+author: "Janne Pitkäniemi"
+date: "10.2.2020" 
 output:
   beamer_presentation:
     includes:  
