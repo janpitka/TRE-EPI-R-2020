@@ -138,7 +138,7 @@ Many features of R are more appealing in the long run.
 	*> library(survival)*
 	  \medskip
 - Alternatively load from the menu bar: \newline
- {\it Packages - Load package... - Select one} 
+ *Packages - Load package... - Select one* 
    \medskip
 -  New versions easily updated from Internet.
 (https://www.rdocumentation.org/trends)
@@ -146,20 +146,19 @@ Many features of R are more appealing in the long run.
 
 ## R script -- R Studio -- commands in a file
 
-\ \\
-\textbf{R script file} is an ASCII file
+**R script file** is an ASCII file
 containing a sequence of R commands to be executed.
 
-gskip
-The **script editor} -- use R-Studio R
 
-- In {\tt R-Studio} open the script editor window: {\it New file - R script}, or when editing an existing {script file}:
- {\it File - Recent Files}, 
+The **script editor** -- use R-Studio
+
+- In `R-Studio` open the script editor window:  *New file - R script*, or when editing an existing *script file*:
+ *File - Recent Files*, 
 \medskip
 \medskip    
-- Save the {script file}: 
-    {\it Save} \emph{e.g.} or     {\it Save As } {\tt *.R}
-- Excecute a line {\it Ctrl-Enter}
+- Save the `script file`: 
+    *Save* `e.g.` or     *Save As*  *.R
+- Excecute a line *Ctrl-Enter*
     
 
 
@@ -167,57 +166,50 @@ The **script editor} -- use R-Studio R
 
 ## R script (cont'd)}
 
- - Paint the lines to be excecuted and {\it Ctrl -Enter} will execute lines.
+ - Paint the lines to be excecuted and *Ctrl -Enter* will execute lines.
  \medskip  
 
-- To run a whole script file, write in console window: \\
- {\tt > source("c:/.../mycmds.R", echo=TRUE)}
+- To run a whole script file, write in console window: \newline
+ ` > source("c:/.../mycmds.R", echo=TRUE)`
 
 - The script can also be written and edited by any external editor programs (like Notepad). 
 
 
 ## Data objects of different kinds
 
-
--  {\tt vector}: ordered set of similar elements \\ \emph{e.g.}
+-  \texttt{vector}: ordered set of similar elements \newline \emph{e.g.}
   real numbers or character sequences,
   \medskip
--  {\tt factor}: categorical variable with levels \\ 
-\emph{e.g.}
-{\tt gender}, levels: {\tt c(1,2)} or {\tt c('male', 'female')}; 
+-  \texttt{factor}: categorical variable with levels \newline \emph{e.g.}
+\texttt{gender}, levels: \texttt{c(1,2)} or \texttt{c('male', 'female')}; 
 \medskip
--  {\tt matrix, array}: 2- and k-dimensional tables,
+-  \texttt{matrix, array}: 2- and k-dimensional tables,
 \medskip
--  {\tt data.frame}: ``data matrix'' (more of this soon!),
+-  \texttt{data.frame}: "data matrix" (more of this soon!),
 \medskip
--  {\tt ts}: time series object,
+-  \texttt{ts}: time series object,
 \medskip
--  {\tt list}: sequence of different types of objects.
-% -  {\tt function, expression}, \ldots
+-  \texttt{list}: sequence of different types of objects.
 
+## Attributes of data objects
 
-##Attributes of data objects
-\ \\
 Functions that extract some key properties
 of objects:
  
--  {\tt length( )}: number of elements, 
+-  \texttt{length( )}: number of elements, 
 \medskip
--  {\tt mode( )}: basic type of elements, 
+-  \texttt{mode( )}: basic type of elements, 
 \medskip
--  {\tt dim( )}: dimensions of arrays, matrices
+-  \texttt{dim( )}: dimensions of arrays, matrices
    and data frames,
   \medskip 
--  {\tt str( )}: overall structure, 
+-  \texttt{str( )}: overall structure, 
 \medskip
--  {\tt class( )}: property that determines
- how certain \\
- **generic functions} (\emph{e.g.} 
- {\tt summary(); plot()}) \\
+-  \texttt{class( )}: property that determines
+ how certain \newline
+ **generic functions** (\emph{e.g.} 
+ \texttt{summary(); plot()}) \newline
  work when the object is given as argument.
-% -  {\tt name}: 
-
-
 
 
 ## Data frame -- data matrix
@@ -225,18 +217,15 @@ of objects:
 
 - [Data frame] = a **list** of column vectors
 
--  Rows correspond to observational units, and \\ columns (same length) refer to variables.
+-  Rows correspond to observational units, and \newline columns (same length) refer to variables.
 \medskip
--  Column vectors can be \\ {\tt numeric, character} or {\tt logical}
+-  Column vectors can be \newline \texttt{ numeric, character} or \texttt{logical}
 \medskip
--  Columns are \textbf{subobjects} of the data frame. Their \\
+-  Columns are \textbf{subobjects} of the data frame. Their \newline
 names are not directly accessible. Two possibilities:
-   + Use ``surname\$firstname'', e.g. {\tt mydata\$var1}, 
+   + Use ``surname\$firstname'', e.g. \texttt{ mydata\$var1 }, 
    + Place the data frame in the search path at position 2: 
-  {\tt attach(mydata)}; then use just ``firstname'': {\tt var1}
-
-
-
+  \texttt{attach(mydata)}; then use just ``firstname'': \texttt{ var1}
 
 
 ## Data frame import from external files
@@ -248,17 +237,17 @@ names are not directly accessible. Two possibilities:
    read.table("http://cc.oulu.fi/~tilel/esan.txt",...)
  \normalsize
 
--  Files with fixed-width format: {\tt read.fwf()};
+-  Files with fixed-width format: \texttt{ read.fwf()};
 \medskip
 -  Files created in SPSS, SAS, Stata \emph{etc.}: 
-functions \\
-$\quad$ {\tt read.spss(), read.ssd(), read.dta()}, \emph{etc.} \\
-in package {\tt foreign},
+functions \newline
+$\quad$ \texttt{ read.spss(), read.ssd(), read.dta()}, \emph{etc.} \newline
+in package \texttt{ foreign},
  \medskip 
--  Excel-files: either {\tt read.table("clipboard", ...)}, or\\
- $\quad$ (1)\ save the Excel-file in {\tt .csv} or {\tt .txt} format, \\
- $\quad$ (2)\ in R: {\tt read.csv2( )} or {\tt read.table( )}
-% -  Files from an Internet-address: function {\tt url( )}.
+-  Excel-files: either {\tt read.table("clipboard", ...)}, or\newline
+ $\quad$ (1)\ save the Excel-file in \texttt{ .csv} or \texttt{ .txt} format, \newline
+ $\quad$ (2)\ in R: \texttt{ read.csv2( )} or \texttt{ read.table( )}
+
  \medskip 
 -  Relational DBMSs:  several R packages available.
 
@@ -266,35 +255,35 @@ in package {\tt foreign},
 
 ## Data frame import from external files with R
 
-Choose {\it Import Datasets} 
+Choose *Import Datasets* 
 
-- [1.] {\it from text (base)} for \textbf{text} files
-- [2.] {\it from text (readr)} for \textbf{csv} files
+- *from text (base)* for \textbf{text} files
+- *from text (readr)* for \textbf{csv} files
 \vspace*{0.3cm}
-- [3.] {\it from excel} for \textbf{excel} files
+- *from excel* for \textbf{excel} files
 \vspace*{0.3cm}
-- [4.] {\it from SPSS} for \textbf{spss} files
-- [5.] {\it from SAS} for \textbf{sas} files
-- [6.] {\it from STATA} for \textbf{stata} files
+- *from SPSS* for \textbf{spss} files
+- *from SAS* for \textbf{sas} files
+- *from STATA* for \textbf{stata} files
 
 
 ## Dealing with output
 
 -  The console contents, \emph{i.e.} the flow of input commands and output results 
-from the console window, can be \\
-$ \ \ - \ \ $ printed on paper: {\it File - Print...} \\
-$ \ \ - \ \ $ saved to an ASCII file: {\it File - Save to file...}
+from the console window, can be \newline
+$ \ \ - \ \ $ printed on paper: *File - Print...* \newline
+$ \ \ - \ \ $ saved to an ASCII file: *File - Save to file...*
 \medskip
 -  Selected parts can be copied from the console and pasted to an external file.
 \medskip
 - 
-Function {\tt sink("results.txt")} diverts 
+Function \texttt{sink("results.txt")} diverts 
 all subsequent output to an external text file.
-Back to console: {\tt sink()}.
+Back to console: \texttt{ sink()}.
 \medskip
--  Choose {it\ New File -- R Markdown} output to MS-Word
+-  Choose *New File -- R Markdown* output to MS-Word
 \medskip
--  Graphs saved in desired format: {\it File - Save...}  
+-  Graphs saved in desired format: *File - Save...*  
 
 
 
@@ -305,58 +294,68 @@ Back to console: {\tt sink()}.
 Most computations in R involve the {invocation} or {call} of functions.  They are called by name with a set of arguments separated by commas, \emph{e.g.} `fun(x, y, z) ;` 
   **Function** \newline
   
-  - [=] sequence of rules on how to produce 
+  - = sequence of rules on how to produce 
     desired output: 
-   - [ ] **value** of the function, 
-    from given input, {\it i.e.} 
-   - [ ] **arguments} of the function.
+   - **value** of the function, 
+    from given input, *i.e.* 
+   - **arguments** of the function.
  
  
-\emph{Example}: Function {\tt sqrt()} computes square roots:
+\emph{Example}: Function \texttt{sqrt()} computes square roots:
 
-\medskip
-{\tt > x <- c(0,1,2,3,4)  \#} argument vector defined\\
-{\tt > sqrt(x)\ \ \ \ \#} call with argument {\tt x}; value printed:\\
-{\tt [1] 0.000 1.000 1.414 1.732 2.000}
- 
+argument vector defined
+```{r, echo=TRUE}
+x <- c(0,1,2,3,4)
+```
+call with argument  \texttt{x}
+```{r, echo=TRUE,comment=NA}
+sqrt(x)
+```
+
  
 
 
 ## Defining a new function (1)
-\ \\
-{\it Example}. Function {\tt CIapp} to calculate an approximate confidence interval
- from point estimate ({\tt estim}) 
-and std error ({\tt SE}) by formula {\tt estim} $\pm$ $z_{\gamma/2}\ \times$ {\tt SE}. 
+
+*Example*. Function \texttt{CIapp} to calculate an approximate confidence interval
+ from point estimate (\texttt{estim}) 
+and std error (\texttt{SE}) by formula \texttt{ estim} $\pm$ $z_{\gamma/2}\ \times$ \texttt{ SE}. 
 
 \medskip
-Defining code (without prompts): \\
-\ \\
-{\tt CIapp <- function(estim, SE, level = 0.95) \{ \\
- \ \ \ z <- qnorm(1- (1-level)/2 )  \# setting the quantile\\
- \ \ \ lower <- estim - z*SE ; upper <- estim + z*SE  \\
- \ \ \ CIapp <- c(lower, upper)   \\
- \ \ \ CIapp \} 
-}
+Defining code (without prompts): \newline
+\ \newline
 
--  **Formal arguments}, here {\tt estim, SE, level}
+```{r,echo=TRUE}
+CIapp <- function(estim, SE, level = 0.95)
+  {z <- qnorm(1- (1-level)/2 )  # setting the quantile
+ lower <- estim - z*SE 
+ upper <- estim + z*SE  
+ CIapp <- c(lower, upper)   
+ CIapp }
+```
+
+
+-  **Formal arguments**, here \texttt{ estim, SE, level}
 
  
 ## Calling the new function (1)
-% \ \\
 
--  **Actual arguments}, used in function call: \\
-{\tt > CIapp(3, 1, 0.9) \#} 90\% limits: $3 \pm 1.645\times 1$ \\
-{\tt $[1]$ 1.355  4.645 }\\
-\medskip
-    NB! **Positional matching}: order of actual arguments.
-    \medskip
--  **Keyword matching}: the order of arguments in the call is 
-    irrelevant if the names of formal arguments are  given \\
-	{\tt > CIapp(SE=1.0, level=0.90, estim=3)  }
-	\medskip
--  If a **default value} for an argument is given in the definition and is OK, it can be omitted in calling \\
-{\tt > CIapp(3, 1) \#} 95\% limits: $3 \pm 1.96 \times 1$  \\
-{\tt $[1]$ 1.040  4.960 }
+-  **Actual arguments**, used in function call:
+```{r,echo=TRUE,comment=NA}
+CIapp(3, 1, 0.9) #90\% limits: $3 \pm 1.645\times 1$
+```
+
+NB! **Positional matching**: order of actual arguments. \newline
+-  **Keyword matching**: the order of arguments in the call is 
+    irrelevant if the names of formal arguments are  given 
+```{r,echo=TRUE,comment=NA}
+CIapp(SE=1.0, level=0.90, estim=3)
+```
+  
+-  If a **default value** for an argument is given in the definition and is OK, it can be omitted in calling 
+```{r,echo=TRUE,comment=NA}
+CIapp(3, 1)# 95\% limits: $3 \pm 1.96 \times 1$ 
+```
 
  
 
@@ -381,40 +380,40 @@ To extract information \& items from the value object, \emph{e.g.}
 Returns the minimum and maximum values
 of a data vector.
 
-{\tt > y <- c(15.3, 10.8, 8.1, 19.5, 5.3)  \#} data vector \\
+{\tt > y <- c(15.3, 10.8, 8.1, 19.5, 5.3)  \#} data vector \newline
 \medskip
-{\tt > range(y) \ \#} simple call with argument {\tt y}\\
-{\tt [1]  5.3 19.5}\\
+{\tt > range(y) \ \#} simple call with argument {\tt y}\newline
+{\tt [1]  5.3 19.5}\newline
 \medskip
-{\tt > ra <- range(y) \#} call with assignment of value\\ 
+{\tt > ra <- range(y) \#} call with assignment of value\newline 
 \medskip
-{\tt > ra \ \ \   \#} or {\tt print(ra)}, equivalent to simple call\\
-{\tt [1]  5.3 19.5}\\
+{\tt > ra \ \ \   \#} or {\tt print(ra)}, equivalent to simple call\newline
+{\tt [1]  5.3 19.5}\newline
 \medskip
-{\tt > str(ra) \   \#} structure of the value object\\
-{\tt num [1:2] 5.3 19.5}\\
+{\tt > str(ra) \   \#} structure of the value object\newline
+{\tt num [1:2] 5.3 19.5}\newline
 \medskip
-{\tt > ra[1]  \ \ \#} extracting an item from the value object\\
+{\tt > ra[1]  \ \ \#} extracting an item from the value object\newline
 {\tt [1] 5.3}
  
 
 
 ## Different kinds of functions
 
--  Mathematical, \emph{e.g.} {\tt sqrt(x); log(x); exp(x)}.\\
+-  Mathematical, \emph{e.g.} {\tt sqrt(x); log(x); exp(x)}.\newline
 Arguments and values typically numeric vectors.
 \medskip
 - 
-Data handling, \emph{e.g.} \\
-{\tt dafr <- data.frame(x, y); \\
-adata <- read.table("a.dat", header=T, ...); \\ % 
-redc1 <- subset(redc, group == "24 h");}\\
+Data handling, \emph{e.g.} \newline
+{\tt dafr <- data.frame(x, y); \newline
+adata <- read.table("a.dat", header=T, ...); \newline % 
+redc1 <- subset(redc, group == "24 h");}\newline
 Main argument(s): data object(s). Value: data object.
 \medskip
 -  
-Graphical, \emph{e.g.} \\
-{\tt plot(y $\sim$ x); stripchart(y, xlim=c(0,3))} \\  
-Main argument(s): data object(s). Value: graph. \\
+Graphical, \emph{e.g.} \newline
+{\tt plot(y $\sim$ x); stripchart(y, xlim=c(0,3))} \newline  
+Main argument(s): data object(s). Value: graph. \newline
 Ancillary arguments: \emph{e.g.} graphical parameters.
 
  
@@ -422,26 +421,26 @@ Ancillary arguments: \emph{e.g.} graphical parameters.
 
 ## Value of the function
 
--  numeric object (\emph{e.g.} vector, matrix) for many \\
+-  numeric object (\emph{e.g.} vector, matrix) for many \newline
   mathematical and statistical functions,
   \medskip
--  data object (e.g. vector, data frame) for \\ data handling functions,
+-  data object (e.g. vector, data frame) for \newline data handling functions,
 \medskip
 -  graph for graphical functions,
 \medskip
 -  table for tabulating functions,
 \medskip
--  **list} = a sequence of objects of different kinds, for \\
+-  **list} = a sequence of objects of different kinds, for \newline
 many statistical functions.
 
  
 
 ## Statistical functions
 
--    {\it Main} argument(s): Typically data object(s). \\
+-    {\it Main} argument(s): Typically data object(s). \newline
         Often a {\it model formula}
-        like {\tt y $\sim$ x} with \\ {\tt y} representing 
-        the \emph{response} variable and \\
+        like {\tt y $\sim$ x} with \newline {\tt y} representing 
+        the \emph{response} variable and \newline
         expression {\tt x} = \emph{explanatory} variable(s) or factor(s).
         \medskip
 - 
@@ -461,26 +460,26 @@ many statistical functions.
 maybe of different types.
 \medskip
 - 
-Provides a convenient way to return the \\
+Provides a convenient way to return the \newline
 results of statistical computation.
 \medskip
 - 
-A list with named components formed from existing objects: \\
+A list with named components formed from existing objects: \newline
 \small 
-${ }\quad $ {\small\tt Lista <- list(name=obj1,title=obj2,addr=obj3)} \\
+${ }\quad $ {\small\tt Lista <- list(name=obj1,title=obj2,addr=obj3)} \newline
 \normalsize
-A single component identified: \\
+A single component identified: \newline
 ${ } \quad$ {\small\tt Lista{\$}name};
 \medskip
 - 
-Concatenation of several lists into one: \\
+Concatenation of several lists into one: \newline
 ${ }\quad$ \small  {\tt longlist <- c(list1, list2, \dots)}.
 \normalsize
 
  
 ## Ex: Function *t.test()*
 
-\ \\
+\ \newline
 Description of syntax in the {\tt help()} page
 \small
 Default S3 method:
@@ -494,7 +493,7 @@ t.test(x, y = NULL,
 - 
 Main argument(s): data vector(s) {\tt x} (and {\tt y}) or formula
 - 
-Ancillary arguments, like {\tt var.equal, conf.level}: \\
+Ancillary arguments, like {\tt var.equal, conf.level}: \newline
 Default values given. 
 - 
 **NB.} Dots '{\tt ...}'
@@ -547,7 +546,7 @@ mean in group 24 h mean in group oper
 
 ## Ex: Value returned by {\tt t.test()} is a \emph{list}}
 
-\ \\
+\ \newline
 Function value assigned to an object and examined:
 \small
 > tfol <- t.test(folate ~ group, var.equal=TRUE, 
@@ -627,7 +626,7 @@ T.estimCI <- function(x, ... )
 
 ## Calling the new function (2)
 
-\ \\
+\ \newline
 When {\tt t.estimCI()} is called, 
 a list with 2 named components is returned and printed:
 \small
@@ -651,12 +650,12 @@ attr(,"conf.level")
  or source file, {\it e.g.} {\tt myfuns.R}, 
    which may contain several functions.
    \medskip
--  Source file accessible in an R run after \\
+-  Source file accessible in an R run after \newline
 	{\tt > source("C:/\dots/myfuns.R") } 
 	\medskip
 -  Alternatively from menu bar: {\it File -- Source R code \dots} 
 \medskip
--  Loading from Internet:\\
+-  Loading from Internet:\newline
 {\tt > source("http://.../myfuns.R")}
 
  
@@ -673,10 +672,10 @@ attr(,"conf.level")
 {\tt fun()} (for example {\tt mean()}) 
 applied to values of variable {\tt var} in categories of factor 
 {\tt fac},
--  {\tt stat.table( index = list(rvar, cvar)}, \\
+-  {\tt stat.table( index = list(rvar, cvar)}, \newline
 $\ \ { } \ \ $ 
-{\tt contents = list(count(), percent(rvar) )}, \\
-$\ \ { } \ \ $ {\tt ... )} \\
+{\tt contents = list(count(), percent(rvar) )}, \newline
+$\ \ { } \ \ $ {\tt ... )} \newline
  in package {\tt Epi} for more informative tabulation.
 -  package plyr and ddply-funtion \dots
 -  package data.table for BIG data \dots
