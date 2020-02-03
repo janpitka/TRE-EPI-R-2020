@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/W32TeX) (preloaded format=pdflatex 2020.1.22)  27 JAN 2020 21:23
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/W32TeX) (preloaded format=pdflatex 2020.1.22)  3 FEB 2020 08:00
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1053,7 +1053,28 @@ Package: grffile 2019/11/11 v2.1 Extended file name support for graphics (legac
 y)
 Package grffile Info: This package is an empty stub for compatibility on input 
 line 40.
-) (./EpiR-Tampere2020-lect2.aux)
+)
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\newline' on input line 345.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\newline' on input line 345.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\newline' on input line 345.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\newline' on input line 345.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\newline' on input line 345.
+
+(./EpiR-Tampere2020-lect2.aux)
 \openout1 = `EpiR-Tampere2020-lect2.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 349.
@@ -1228,64 +1249,71 @@ Dictionary: translator-numbers-dictionary, Language: English
 (c:/Users/janne.pitkaniemi/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/transla
 tor/translator-theorem-dictionary-English.dict
 Dictionary: translator-theorem-dictionary, Language: English 
-) (./EpiR-Tampere2020-lect2.nav) [1
-
-{c:/Users/janne.pitkaniemi/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/u
-pdmap/pdftex.map}]
-\openout4 = `EpiR-Tampere2020-lect2.vrb'.
-
-(./EpiR-Tampere2020-lect2.vrb
+) (./EpiR-Tampere2020-lect2.nav)
 LaTeX Font Info:    Trying to load font information for OT1+lmss on input line 
-6.
+350.
 
 (c:/Users/janne.pitkaniemi/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/ot1l
 mss.fd
 File: ot1lmss.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Trying to load font information for OML+lmm on input line 6
-.
+LaTeX Font Info:    Trying to load font information for OML+lmm on input line 3
+50.
 
 (c:/Users/janne.pitkaniemi/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/omll
 mm.fd
 File: omllmm.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OMS+lmsy on input line 
-6.
+350.
 
 (c:/Users/janne.pitkaniemi/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/omsl
 msy.fd
 File: omslmsy.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for OMX+lmex on input line 
-6.
+350.
 
 (c:/Users/janne.pitkaniemi/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/lm/omxl
 mex.fd
 File: omxlmex.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10.95> on input line 6.
+(Font)              <8> on input line 350.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 6.
+(Font)              <6> on input line 350.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 6.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 6.
+(Font)              <5> on input line 350.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 350
+.
 
 (c:/Users/janne.pitkaniemi/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/amsfont
 s/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 6.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 350
+.
 
 (c:/Users/janne.pitkaniemi/AppData/Roaming/TinyTeX/texmf-dist/tex/latex/amsfont
 s/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-LaTeX Font Info:    Font shape `T1/lmss/m/it' in size <10.95> not available
-(Font)              Font shape `T1/lmss/m/sl' tried instead on input line 6.
 LaTeX Font Info:    Font shape `T1/lmss/m/it' in size <8> not available
-(Font)              Font shape `T1/lmss/m/sl' tried instead on input line 6.
+(Font)              Font shape `T1/lmss/m/sl' tried instead on input line 350.
 LaTeX Font Info:    Font shape `T1/lmss/m/it' in size <6> not available
+(Font)              Font shape `T1/lmss/m/sl' tried instead on input line 350.
+LaTeX Font Info:    Font shape `T1/lmss/m/it' in size <5> not available
+(Font)              Font shape `T1/lmss/m/sl' tried instead on input line 350.
+[1
+
+{c:/Users/janne.pitkaniemi/AppData/Roaming/TinyTeX/texmf-var/fonts/map/pdftex/u
+pdmap/pdftex.map}]
+\openout4 = `EpiR-Tampere2020-lect2.vrb'.
+
+(./EpiR-Tampere2020-lect2.vrb
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <10.95> on input line 6.
+LaTeX Font Info:    Font shape `T1/lmss/m/it' in size <10.95> not available
 (Font)              Font shape `T1/lmss/m/sl' tried instead on input line 6.
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 2
 2.
@@ -1305,13 +1333,9 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <10> on input line 463.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <7> on input line 463.
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 463.
 LaTeX Font Info:    Font shape `T1/lmss/m/it' in size <10> not available
 (Font)              Font shape `T1/lmss/m/sl' tried instead on input line 463.
 LaTeX Font Info:    Font shape `T1/lmss/m/it' in size <7> not available
-(Font)              Font shape `T1/lmss/m/sl' tried instead on input line 463.
-LaTeX Font Info:    Font shape `T1/lmss/m/it' in size <5> not available
 (Font)              Font shape `T1/lmss/m/sl' tried instead on input line 463.
 [4
 
@@ -1348,7 +1372,7 @@ LaTeX Font Warning: Command \tiny invalid in math mode on input line 522.
 ] [9
 
 ]
-<odds.png, id=81, 301.8778pt x 234.8775pt>
+<odds.png, id=82, 301.8778pt x 234.8775pt>
 File: odds.png Graphic file (type png)
 <use odds.png>
 Package pdftex.def Info: odds.png  used on input line 609.
@@ -1412,7 +1436,7 @@ File: ts1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )) [20
 
 ]
-<CRC_FIN.png, id=160, 696.201pt x 337.26pt>
+<CRC_FIN.png, id=161, 696.201pt x 337.26pt>
 File: CRC_FIN.png Graphic file (type png)
 <use CRC_FIN.png>
 Package pdftex.def Info: CRC_FIN.png  used on input line 920.
@@ -1475,13 +1499,13 @@ Package rerunfilecheck Info: File `EpiR-Tampere2020-lect2.out' has not changed.
 (rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
  ) 
 Here is how much of TeX's memory you used:
- 22220 strings out of 494106
- 409238 string characters out of 6171478
- 451913 words of memory out of 5000000
- 25712 multiletter control sequences out of 15000+600000
+ 22221 strings out of 494106
+ 409249 string characters out of 6171478
+ 453399 words of memory out of 5000000
+ 25713 multiletter control sequences out of 15000+600000
  98861 words of font info for 83 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 54i,13n,57p,810b,468s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 54i,13n,57p,810b,515s stack positions out of 5000i,500n,10000p,200000b,80000s
 {c:/Users/janne.pitkaniemi/AppData/Roaming/TinyTeX/texmf-dist/fonts/enc/dvips
 /lm/lm-ts1.enc}{c:/Users/janne.pitkaniemi/AppData/Roaming/TinyTeX/texmf-dist/fo
 nts/enc/dvips/lm/lm-mathit.enc}{c:/Users/janne.pitkaniemi/AppData/Roaming/TinyT
@@ -1510,10 +1534,10 @@ kaniemi/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmtt10.pfb><c:
 m/lmtt12.pfb><c:/Users/janne.pitkaniemi/AppData/Roaming/TinyTeX/texmf-dist/font
 s/type1/public/lm/lmtt8.pfb><c:/Users/janne.pitkaniemi/AppData/Roaming/TinyTeX/
 texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb>
-Output written on EpiR-Tampere2020-lect2.pdf (26 pages, 593781 bytes).
+Output written on EpiR-Tampere2020-lect2.pdf (26 pages, 599044 bytes).
 PDF statistics:
- 281 PDF objects out of 1000 (max. 8388607)
- 223 compressed objects within 3 object streams
+ 282 PDF objects out of 1000 (max. 8388607)
+ 224 compressed objects within 3 object streams
  78 named destinations out of 1000 (max. 500000)
  53 words of extra memory for PDF output out of 10000 (max. 10000000)
 

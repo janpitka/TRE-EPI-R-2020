@@ -14,7 +14,7 @@ subtitle: Practicals 2
 
 ```{r p2_0, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, comment = NA)
-setwd("C:/Users/janne.pitkaniemi/Projects/TRE2018")
+setwd("C:/Users/janne.pitkaniemi/Documents/GitHub/TRE-EPI-R-2020")
 ```
 
 
@@ -65,7 +65,7 @@ All patients \hfill  &Dead\hfill       &{ }30   &{ }21   \\
 
 Copy the following lines in order to create R dataset for following excercises
 
-```{r p2_1, eval=TRUE,echo=TRUE,warnings=FALSE}
+```{r p2_1, eval=FALSE,echo=TRUE,warnings=FALSE}
 library(Epi)
 library(data.table)
 
@@ -85,7 +85,7 @@ Create a $2\times 2$-matrix, e.g. with a name *tab22*, of counts from the ``All 
 
 In order to do this we summarize counts over two age groups and convert the data to matrix for *twoby2()* function.
 
-```{r p2_3, eval=TRUE,echo=TRUE,warnings=FALSE}
+```{r p2_3, eval=FALSE,echo=TRUE,warnings=FALSE}
 
 tab22<-ugdp[,
             .(counts=sum(counts)),
@@ -98,7 +98,7 @@ mat
 
 or type numbers directly
 
-```{r  p2_4, eval=TRUE,echo=TRUE,warnings=FALSE}
+```{r  p2_4, eval=FALSE,echo=TRUE,warnings=FALSE}
 library(Epi)
 counts <- c(30, 174, 21, 184)
 tab22 <- matrix(counts, nrow=2, byrow=T)
@@ -117,7 +117,7 @@ Call function *twoby2()* with the given input. Check, that the mortality proport
 
   Use *twoby()* again but now to compute 90\% confidence intervals for the parameters. Check how this is done from the help page: *?twoby2*
   
-```{r p2_5, eval=TRUE,echo=TRUE,warnings=FALSE}
+```{r p2_5, eval=FALSE,echo=TRUE,warnings=FALSE}
 twoby2(tab22)
 twoby2(tab22, alpha = 0.1)
 ```
@@ -139,7 +139,7 @@ mortality proportions *P* can be extracted from the columns of this matrix:
 
 (a) Relative Risk
 
-```{r p2_6, eval=TRUE,echo=TRUE,warnings=FALSE}
+```{r p2_6, eval=FALSE,echo=TRUE,warnings=FALSE}
 
 RRmod <- glm( outcome ~ exposed, family=binomial("log"), w = counts, data=ugdp)
 summary(RRmod)
@@ -150,7 +150,7 @@ round(exp( confint(RRmod)), 4)
 
 (b) Odds Ratio
 
-```{r p2_7, eval=TRUE,echo=TRUE,warnings=FALSE}
+```{r p2_7, eval=FALSE,echo=TRUE,warnings=FALSE}
 ORmod <- glm( outcome ~ exposed, family=binomial("logit"), w = counts, data=ugdp)
 round(ci.lin( ORmod, Exp=T)[ , -(3:4)], 4)
 round(exp( confint(ORmod)), 4)
@@ -159,7 +159,7 @@ round(exp( confint(ORmod)), 4)
 
 (b) Risk Difference
 
-```{r p2_8, eval=TRUE,echo=TRUE,warnings=FALSE}
+```{r p2_8, eval=FALSE,echo=TRUE,warnings=FALSE}
 
 RDmod <- glm( outcome ~ exposed, family=binomial(link="identity"), w = counts,data=ugdp)
 summary(RDmod)$coef
@@ -176,7 +176,7 @@ Compute the point estimates and 95\% confidence intervals for the values of the 
 What observations do you make on the heterogeneity of stratum-specific results, and what may be conluded about the homogeneity of the comparative parameters?
 
 
-```{r p2_9, eval=TRUE,echo=TRUE,warnings=FALSE}
+```{r p2_9, eval=FALSE,echo=TRUE,warnings=FALSE}
 
 lt55<-matrix(ugdp[1:4,]$counts, nr=2, byrow=T)
 twoby2(lt55)
@@ -193,7 +193,7 @@ Perform a model-based adjustment for confounding and
 evaluation of effect-modification (interaction) by age group on the risk difference between tolbutamide and placebo. See slides 37-43.
 
 
-```{r p2_10, eval=TRUE,echo=TRUE,warnings=FALSE}
+```{r p2_10, eval=FALSE,echo=TRUE,warnings=FALSE}
 
 
 RDmod2 <- glm(cbind(outcome,counts) ~ exposed+ ageg, family=binomial(link="identity"), data=ugdp)
@@ -214,7 +214,7 @@ evaluation of effect-modification (interaction) by age group on (a) the risk rat
 
 (a) RR
 
-```{r p2_11, eval=TRUE,echo=TRUE,warnings=FALSE}
+```{r p2_11, eval=FALSE,echo=TRUE,warnings=FALSE}
 RDmod3 <- glm(cbind(outcome,counts) ~ exposed*ageg, family=binomial(link="log"), data=ugdp)
 round(ci.lin(RDmod3,Exp=F)[,c(1,5:6)],4) # wald-likelihood based   
 ```
@@ -222,7 +222,7 @@ round(ci.lin(RDmod3,Exp=F)[,c(1,5:6)],4) # wald-likelihood based
 
 (b) OR
 
-```{r p2_12, eval=TRUE,echo=TRUE,warnings=FALSE}
+```{r p2_12, eval=FALSE,echo=TRUE,warnings=FALSE}
 RDmod3 <- glm(cbind(outcome,counts) ~ exposed*ageg, family=binomial(link="logit"), data=ugdp)
 round(ci.lin(RDmod3,Exp=F)[,c(1,5:6)],4) # wald-likelihood based   
 ```

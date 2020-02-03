@@ -1,7 +1,14 @@
 ---
-title: "Statistical Methods in Cancer Epidemiology using R"
-author: "Janne Pitkäniemi"
-date: "10.2.2020" 
+title: 
+- Statistical Methods in Cancer Epidemiology using R
+author: 
+- \textbf{Janne Pitkäniemi}  \newline \newline
+- Faculty of Social Sciences, University of Tampere  \newline
+- Finnish Cancer Registry  \newline  \newline
+- Lecture 2
+date: "Feb,10 2010 "
+header-includes: \usepackage{graphicx,tikz}
+institute: "janne.pitkaniemi@cancer.fi>"
 output:
   beamer_presentation:
     includes:  

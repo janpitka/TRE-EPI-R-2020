@@ -45,8 +45,8 @@ to be used in this course.
 2. For example, my working directory for this course on my laptop is
 
 
-```{r p1_0, eval=TRUE,echo=TRUE}
-setwd("C:/Users/janne.pitkaniemi/Projects/TRE2018")
+```{r p1_0, eval=FALSE,echo=TRUE}
+setwd("C:/Users/janne.pitkaniemi/Documents/GitHub/TRE-EPI-R-2020")
 ```
 , but yours is probably something else.
 
@@ -81,7 +81,7 @@ in R-studio
   Installation of a new package needs to be done only once when 
   start to use a new  package (or it's latest version in your use).
 3. Type the following two lines:
-```{r p1_1, eval=TRUE,echo=TRUE}
+```{r p1_1, eval=FALSE,echo=TRUE}
 x<-2
 print(x)
 ```
@@ -102,10 +102,10 @@ view  the data in SPSS.
 will load some packages, read in the SPSS data set into a data frame
 and view its properties. Comments after **#** in each line can be omitted.
 
-```{r p1_2, eval=TRUE,echo=TRUE,warnings=FALSE}
+```{r p1_2, eval=FALSE,echo=TRUE,warnings=FALSE}
 library(foreign)
 library(Epi)
-bca <- read.spss("C:/Users/janne.pitkaniemi/Projects/TRE2018/breastca.sav",
+bca <- read.spss("C:/Users/janne.pitkaniemi/Documents/GitHub/TRE-EPI-R-2020/breastca.sav",
                  to.data.frame=TRUE)
 bca[1:10, ]      # listing the first 20 rows of the data frame
 str(bca)         # viewing the structure
@@ -115,10 +115,10 @@ summary(bca)     # summary statistics of the variables
 
 Data table package is an alternative for handling (large) datasets and making summary tables
 
-```{r p1_3, eval=TRUE,echo=TRUE,warnings=FALSE}
+```{r p1_3, eval=FALSE,echo=TRUE,warnings=FALSE}
 library(haven)
 library(data.table)
-bca <- read_sav("C:/Users/janne.pitkaniemi/Projects/TRE2018/breastca.sav")
+bca <- read_sav("C:/Users/janne.pitkaniemi/Documents/GitHub/TRE-EPI-R-2020/breastca.sav")
 bcadt<-data.table(bca) # This converts data.frame to data.table object
 bcadt      # listing the first 20 rows of the data frame
 str(bcadt)         # viewing the structure
@@ -151,21 +151,21 @@ from variable *AGE* using function *cut( )*.
 Get familiar with the syntax of this function by visiting its *help* page.
 Specify *right=F*  so that each breakpoint is also an exact lower limit for an age group:
 
-```{r p1_4, eval=TRUE,echo=TRUE}
+```{r p1_4, eval=FALSE,echo=TRUE}
 bca$age.gr <- cut(bca$AGE, br=c(20, 50, 65, 90), right=F)
 head(bca[1:5,c(2,12)])
 ```
 
 Data.table version of the same
 
-```{r p1_5, eval=TRUE,echo=TRUE}
+```{r p1_5, eval=FALSE,echo=TRUE}
 bcadt[,age.gr:=cut(bca$AGE, br=c(20, 50, 65, 90), right=F)]
 head(bcadt[1:5,c(2,12)])
 ```
 
 2.  It is possible to label the age groups 
 to be more of publication style:
-```{r p1_6, eval=TRUE,echo=TRUE}
+```{r p1_6, eval=FALSE,echo=TRUE}
 levels(bca$age.gr) <-  c('20-49', '50-64', '65-89')
 head(bca[1:5,c(2,12)])
 ```
@@ -175,26 +175,26 @@ You may attach the data frame after this: *attach(bca)*
 3.  Form a marginal frequency table for *age.gr* using
 function *table()* and print:
 
-```{r p1_7, eval=TRUE,echo=TRUE}
+```{r p1_7, eval=FALSE,echo=TRUE}
 table(bca$age.gr)
 ```
 
 Data.table version
 
-```{r p1_8, eval=TRUE,echo=TRUE}
+```{r p1_8, eval=FALSE,echo=TRUE}
 bcadt[order(age.gr),.N,by=age.gr]
 ```
 
 4.  Print a frequency table of variable *HISTGRAD*
 in the same way as for *age.gr*. 
 
-```{r p1_9, eval=TRUE,echo=TRUE}
+```{r p1_9, eval=FALSE,echo=TRUE}
 table(bca$HISTGRAD)
 ```
 
 Data.table version
 
-```{r p1_10, eval=TRUE,echo=TRUE}
+```{r p1_10, eval=FALSE,echo=TRUE}
 bcadt[order(HISTGRAD),.N,by=HISTGRAD]
 ```
 
@@ -206,7 +206,7 @@ bcadt[order(HISTGRAD),.N,by=HISTGRAD]
  First install package *Epi* from R-studio *Tools -- install packages* and 
  run following scrpit
 
-```{r p1_11, eval=TRUE,echo=TRUE}
+```{r p1_11, eval=FALSE,echo=TRUE}
 library(Epi)
 ```
  
@@ -214,7 +214,7 @@ library(Epi)
 1.  Frequencies and percentages of histological grade
 simultaneously, and marginal totals:
 
-```{r p1_12, eval=TRUE,echo=TRUE}
+```{r p1_12, eval=FALSE,echo=TRUE}
 stat.table( HISTGRAD, list(count(), percent(HISTGRAD)),
                       margins=T,
                       data=bca);
@@ -222,20 +222,20 @@ stat.table( HISTGRAD, list(count(), percent(HISTGRAD)),
 
 Data.table version without missing values
 
-```{r p1_13, eval=TRUE,echo=TRUE}
+```{r p1_13, eval=FALSE,echo=TRUE}
 res<-bcadt[order(HISTGRAD) & !is.na(HISTGRAD),.N,by=HISTGRAD] [, prop := 100*(N/sum(N)), ]
 print(res)
 ```
 
 Data.table version with missing values
 
-```{r p1_14, eval=TRUE,echo=TRUE}
+```{r p1_14, eval=FALSE,echo=TRUE}
 res<-bcadt[order(HISTGRAD),.N,by=HISTGRAD] [, prop := 100*(N/sum(N)), ]
 print(res)
 ```
  
 2. The columns can be neatly labelled:
-```{r p1_15, eval=TRUE,echo=TRUE}
+```{r p1_15, eval=FALSE,echo=TRUE}
 stat.table(  HISTGRAD,
             list(Number = count(), 'Per cent' = percent(HISTGRAD)),
             margins=T, 
@@ -245,7 +245,7 @@ stat.table(  HISTGRAD,
 Almost like a publication quality table!
 
 <!-- Data.table version -->
-<!-- ```{r, eval=TRUE,echo=TRUE} -->
+<!-- ```{r, eval=FALSE,echo=TRUE} -->
 <!-- res1<-bcadt[order(HISTGRAD) & !is.na(HISTGRAD),.(Number=.N),by=HISTGRAD][, Per_cent := 100*(Number/sum(Number)), ] -->
 <!-- res2<-bcadt[order(HISTGRAD) & !is.na(HISTGRAD),.(HISTGRAD=0,Number=.N),][, Per_cent := 100*(Number/sum(Number)), ] -->
 <!-- res1[nrow(res1) + 1,1:3] = res2 -->
@@ -253,7 +253,7 @@ Almost like a publication quality table!
 
 3.  Tabulate the mean age of patients as well as the minimum and maximum ages in each grade group:\\
 
-```{r p1_16, eval=TRUE,echo=TRUE}
+```{r p1_16, eval=FALSE,echo=TRUE}
 stat.table( HISTGRAD, 
  list(Number = count(), 
    'Mean age' = mean(AGE), min(AGE), max(AGE)), 
@@ -269,7 +269,7 @@ There is a special **print method** for **stat.table()**,
 by which one can tune the number of decimal points. 
 Before that, save the table into an own object.
 
-```{r p1_17, eval=TRUE,echo=TRUE}
+```{r p1_17, eval=FALSE,echo=TRUE}
 
 mage.gr <- stat.table( HISTGRAD, 
 list(Number = count(), 
@@ -289,7 +289,7 @@ using function *table()*. Assign it to object *grbyage*
 and print. Take a look at the table. Can you judge anything about the
 association between age and histological grade from the table?
 
-```{r p1_18, eval=TRUE,echo=TRUE}
+```{r p1_18, eval=FALSE,echo=TRUE}
 grbyage<-table(bca$age.gr,bca$HISTGRAD)
 grbyage
 ```
@@ -299,7 +299,7 @@ grbyage
 the frequency (counts) and percentage distribution of 
 *HISTGRAD* in the three age groups:
 
-```{r p1_19, eval=TRUE,echo=TRUE}
+```{r p1_19, eval=FALSE,echo=TRUE}
 stat.table( index = list(age.gr, HISTGRAD),
  contents = list(count(), percent(HISTGRAD) ), data=bca );
 ```
@@ -311,7 +311,7 @@ purposes we also add the data frame as a *data*
 argument indicating that *stat.table()* can
 also operate on variables that are hidden in unattached data frames:
 
-```{r p1_20, eval=TRUE,echo=TRUE}
+```{r p1_20, eval=FALSE,echo=TRUE}
 stat.table( index = list(age.gr, HISTGRAD), 
             contents = list(count(), percent(HISTGRAD) ), 
             margins = T, data = bca) 
@@ -322,7 +322,7 @@ stat.table( index = list(age.gr, HISTGRAD),
 row percentages only. This can be obtained by dropping the *count()*
 argument (and the comma after it!) from the list of *contents*.   
 
-```{r p1_21, eval=TRUE,echo=TRUE}
+```{r p1_21, eval=FALSE,echo=TRUE}
 stat.table( index = list(age.gr, HISTGRAD), 
             contents = list(percent(HISTGRAD) ), 
             margins = T, data = bca) 
@@ -334,7 +334,7 @@ stat.table( index = list(age.gr, HISTGRAD),
 *age.gr* and *HISTGRAD* using function *chisq.test()*
 with these variables as its main (and only) arguments.
 
-```{r p1_22, eval=TRUE,echo=TRUE}
+```{r p1_22, eval=FALSE,echo=TRUE}
 chisq.test(bca$age.gr,bca$HISTGRAD)
 ```
 
@@ -343,7 +343,7 @@ chisq.test(bca$age.gr,bca$HISTGRAD)
 previous item to an object with name *res*, say,
 and view its structure usint *str()* function. 
 
-```{r p1_23, eval=TRUE,echo=TRUE}
+```{r p1_23, eval=FALSE,echo=TRUE}
 res<-chisq.test(bca$age.gr,bca$HISTGRAD)
 str(res)
 ```
@@ -352,7 +352,7 @@ str(res)
 7. Can you extract the *expected frequencies* 
 from it? If yes, print them.
 
-```{r p1_24, eval=TRUE,echo=TRUE}
+```{r p1_24, eval=FALSE,echo=TRUE}
 res$expected
 ```
 
@@ -371,7 +371,7 @@ Create and print by *stat.table()* a 2-way frequency table with
 
 
 
-```{r p1_25, eval=TRUE,echo=TRUE}
+```{r p1_25, eval=FALSE,echo=TRUE}
 stat.table( index = list(age.gr, LN_YESNO), 
             contents = list(percent(LN_YESNO) ), 
             margins = T, data = bca) 
@@ -384,7 +384,7 @@ stat.table( index = list(age.gr, LN_YESNO),
 Create another 2-way frequency and percentage table as in 
 1. but now with *HISTGRAD* as the row variable. 
 
-```{r p1_26, eval=TRUE,echo=TRUE}
+```{r p1_26, eval=FALSE,echo=TRUE}
 stat.table( index = list(age.gr, HISTGRAD), 
             contents = list(percent(HISTGRAD) ), 
             margins = T, data = bca) 
@@ -397,14 +397,14 @@ interpreted to people. However, suppose we are interested knowing if the associa
 
 Ignoring the age:
 
-```{r p1_27, eval=TRUE,echo=TRUE}
+```{r p1_27, eval=FALSE,echo=TRUE}
 stat.table( index = list(HISTGRAD,LN_YESNO), 
             contents = list(count(),percent(LN_YESNO) ), 
             margins = T, data = bca) 
 ```
 
 
-<!-- ```{r, eval=TRUE,echo=TRUE} -->
+<!-- ```{r, eval=FALSE,echo=TRUE} -->
 <!-- stat.table( index = list(HISTGRAD, LN_YESNO),  -->
 <!--             contents = list(count(), percent(LN_YESNO) ),  -->
 <!--                 margins = T,  -->
@@ -413,7 +413,7 @@ stat.table( index = list(HISTGRAD,LN_YESNO),
 
 Let's do this with data.table to illustrate the usefullness of it.
 
-```{r p1_28, eval=TRUE,echo=TRUE}
+```{r p1_28, eval=FALSE,echo=TRUE}
 bcadt<-bcadt[!is.na(bca$HISTGRAD),] #remove missing observations for histological grading
 freq_tab<-bcadt[order(age.gr,HISTGRAD,LN_YESNO), .(.N), by = list(age.gr,HISTGRAD,LN_YESNO)] # make table for all combinations of stratifying variables in order to verify our calculations
 
@@ -434,7 +434,7 @@ Apply the functions *length()* and *sum()* on
 the table object *grbyage*. It seems like
 these functions treat the table as if it were a numeric vector ...
 
-```{r p1_29, eval=TRUE,echo=TRUE}
+```{r p1_29, eval=FALSE,echo=TRUE}
 length(grbyage)
 sum(grbyage)
 ```
@@ -444,7 +444,7 @@ sum(grbyage)
 table object by functions 
 *class(), mode(), dim() and str()* 
 What information do these provide?
-```{r p1_30, eval=TRUE,echo=TRUE}
+```{r p1_30, eval=FALSE,echo=TRUE}
 class(grbyage)
 mode(grbyage)
 dim(grbyage)
@@ -463,7 +463,7 @@ compute and print also their sum,
 compute and print also their sum.
 
 
-```{r p1_31, eval=TRUE,echo=TRUE}
+```{r p1_31, eval=FALSE,echo=TRUE}
 grbyage[2,2]
 print(grbyage[2,])
 print(sum(grbyage[2,]))

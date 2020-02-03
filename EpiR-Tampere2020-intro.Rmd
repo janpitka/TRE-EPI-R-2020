@@ -6,7 +6,7 @@ author:
 - Faculty of Social Sciences, University of Tampere  \newline
 - Finnish Cancer Registry  \newline  \newline
 date: "Feb 10 - Mar 30,  2020"
-institute: "janne.pitkaniemi@cancer.fi>,karri.seppa@cancer.fi"
+institute: "janne.pitkaniemi@cancer.fi>; karri.seppa@cancer.fi"
 output: beamer_presentation
 ---
 
