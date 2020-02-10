@@ -1,0 +1,71 @@
+\frametitle{Fitting model with modification (cont'd)}
+\protect\hypertarget{fitting-model-with-modification-contd}{}
+
+Fitting the model including the product term:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{RDmod3 <-}\StringTok{ }\KeywordTok{glm}\NormalTok{(props }\OperatorTok{~}\StringTok{ }\NormalTok{trt }\OperatorTok{+}\StringTok{ }\NormalTok{size }\OperatorTok{+}\StringTok{ }\NormalTok{trtsize,}
+               \DataTypeTok{fam =} \KeywordTok{binomial}\NormalTok{(}\DataTypeTok{link=}\StringTok{'identity'}\NormalTok{), }\DataTypeTok{w =}\NormalTok{ npats)}
+\end{Highlighting}
+\end{Shaded}
+
+Results and interpretation:
+
+\small
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{round}\NormalTok{( }\KeywordTok{ci.lin}\NormalTok{(RDmod3)[ , }\OperatorTok{-}\NormalTok{(}\DecValTok{3}\OperatorTok{:}\DecValTok{4}\NormalTok{)], }\DecValTok{4}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+            Estimate StdErr    2.5%  97.5%
+(Intercept)   0.1296 0.0204  0.0896 0.1697
+trt          -0.0607 0.0340 -0.1273 0.0060
+size          0.1829 0.0557  0.0737 0.2921
+trtsize       0.0181 0.0678 -0.1147 0.1509
+\end{verbatim}
+
+\normalsize
+
+\begin{itemize}
+\tightlist
+\item
+  \(\widehat \beta = -0.061 = \widehat \theta_0 =\) RD for OS \emph{vs.}
+  PN in small stones,
+\item
+  \(\widehat \gamma = -0.183 =\) RD btw large and small stones for OS.
+\item
+  estimate {[}95 \% CI{]} of the interaction parameter:
+  \[\widehat \tau = {\bf 0.0181 [-0.115, 0.151]}\]
+
+  \item[{ }]
+
+  \(\Rightarrow\) no evidence for essential modification of risk
+  difference.
+\end{itemize}
+
+Interpretation
+
+This model is \textbf{saturated}: It has as many coefficients as there
+are observations. Hence
+
+\begin{itemize}
+\item
+  residual df = 0,
+\item
+  fitted cell probabilities = observed proportions:
+\item
+  \(\widehat\pi_{00}\) = \(0.130\),
+\item
+  \(\widehat\pi_{10}\) = \(0.130 - 0.061 = 0.069\),
+\item
+  \(\widehat\pi_{01}\) = \(0.130 + 0.183 = 0.313\),
+\item
+  \(\widehat\pi_{11}\) = \(0.130 - 0.061 + 0.183 + 0.018\) = 0.027
+\item
+  residual \(X^2\) and deviance are both 0.
+\end{itemize}
+

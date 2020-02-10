@@ -103,27 +103,14 @@ will load some packages, read in the SPSS data set into a data frame
 and view its properties. Comments after **#** in each line can be omitted.
 
 ```{r p1_2, eval=FALSE,echo=TRUE,warnings=FALSE}
-library(foreign)
-library(Epi)
-bca <- read.spss("C:/Users/janne.pitkaniemi/Documents/GitHub/TRE-EPI-R-2020/breastca.sav",
-                 to.data.frame=TRUE)
-bca[1:10, ]      # listing the first 20 rows of the data frame
+library(haven)
+bca <- read_sav("C:/Users/janne.pitkaniemi/Documents/GitHub/TRE-EPI-R-2020/breastca.sav")
+bca[1:10, ]      # listing the first 10 rows of the data frame
 str(bca)         # viewing the structure
 attributes(bca)$variable.labels # description of variables
 summary(bca)     # summary statistics of the variables
 ```
 
-Data table package is an alternative for handling (large) datasets and making summary tables
-
-```{r p1_3, eval=FALSE,echo=TRUE,warnings=FALSE}
-library(haven)
-library(data.table)
-bca <- read_sav("C:/Users/janne.pitkaniemi/Documents/GitHub/TRE-EPI-R-2020/breastca.sav")
-bcadt<-data.table(bca) # This converts data.frame to data.table object
-bcadt      # listing the first 20 rows of the data frame
-str(bcadt)         # viewing the structure
-summary(bcadt)     # summary statistics of the variables
-```
 2.  Save the script file (*File - Save - etc.*) 
  into your own directory with name *bca.R*.
 
@@ -156,12 +143,6 @@ bca$age.gr <- cut(bca$AGE, br=c(20, 50, 65, 90), right=F)
 head(bca[1:5,c(2,12)])
 ```
 
-Data.table version of the same
-
-```{r p1_5, eval=FALSE,echo=TRUE}
-bcadt[,age.gr:=cut(bca$AGE, br=c(20, 50, 65, 90), right=F)]
-head(bcadt[1:5,c(2,12)])
-```
 
 2.  It is possible to label the age groups 
 to be more of publication style:
@@ -179,11 +160,6 @@ function *table()* and print:
 table(bca$age.gr)
 ```
 
-Data.table version
-
-```{r p1_8, eval=FALSE,echo=TRUE}
-bcadt[order(age.gr),.N,by=age.gr]
-```
 
 4.  Print a frequency table of variable *HISTGRAD*
 in the same way as for *age.gr*. 
@@ -192,11 +168,6 @@ in the same way as for *age.gr*.
 table(bca$HISTGRAD)
 ```
 
-Data.table version
-
-```{r p1_10, eval=FALSE,echo=TRUE}
-bcadt[order(HISTGRAD),.N,by=HISTGRAD]
-```
 
 \pagebreak
 
@@ -220,12 +191,6 @@ stat.table( HISTGRAD, list(count(), percent(HISTGRAD)),
                       data=bca);
 ```
 
-Data.table version without missing values
-
-```{r p1_13, eval=FALSE,echo=TRUE}
-res<-bcadt[order(HISTGRAD) & !is.na(HISTGRAD),.N,by=HISTGRAD] [, prop := 100*(N/sum(N)), ]
-print(res)
-```
 
 Data.table version with missing values
 
@@ -411,18 +376,6 @@ stat.table( index = list(HISTGRAD,LN_YESNO),
 <!--       data = subset( bca, age.gr=='[50-65)') ) -->
 <!-- ``` -->
 
-Let's do this with data.table to illustrate the usefullness of it.
-
-```{r p1_28, eval=FALSE,echo=TRUE}
-bcadt<-bcadt[!is.na(bca$HISTGRAD),] #remove missing observations for histological grading
-freq_tab<-bcadt[order(age.gr,HISTGRAD,LN_YESNO), .(.N), by = list(age.gr,HISTGRAD,LN_YESNO)] # make table for all combinations of stratifying variables in order to verify our calculations
-
-res<-bcadt[order(age.gr,HISTGRAD), 
-           .(percentage = round(100*tabulate(LN_YESNO)/.N)),
-           by = list(age.gr,HISTGRAD)]
-
-print(res)
-```
 
 \pagebreak
 
@@ -469,7 +422,6 @@ print(grbyage[2,])
 print(sum(grbyage[2,]))
 print(grbyage[,2])
 print(sum(grbyage[,2]))
-
 ```
 
 
@@ -480,8 +432,57 @@ print(sum(grbyage[,2]))
  
  https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html
 
+Data table package is an alternative for handling (large) datasets and making summary tables
+
+```{r p1_32, eval=FALSE,echo=TRUE}
+library(data.table)
+library(haven)
+bca <- read_sav("C:/Users/janne.pitkaniemi/Documents/GitHub/TRE-EPI-R-2020/breastca.sav")
+bcadt<-data.table(bca) # This converts data.frame to data.table object
+bcadt      # listing the first 20 rows of the data frame
+str(bcadt)         # viewing the structure
+summary(bcadt)     # summary statistics of the variables
+```
+
+Data.table version creating grouping variable
+
+```{r p1_5, eval=FALSE,echo=TRUE}
+bcadt[,age.gr:=cut(bca$AGE, br=c(20, 50, 65, 90), right=F)]
+head(bcadt[1:5,c(2,12)])
+```
+
+Frequency distribution by histological type
+
+```{r p1_10, eval=FALSE,echo=TRUE}
+bcadt[order(HISTGRAD),.N,by=HISTGRAD]
+```
+
+Data.table version without missing values
+
+```{r p1_13, eval=FALSE,echo=TRUE}
+res<-bcadt[order(HISTGRAD) & !is.na(HISTGRAD),.N,by=HISTGRAD] [, prop := 100*(N/sum(N)), ]
+print(res)
+```
 
 
+Data.table version by ordered age-group-
+
+```{r p1_8, eval=FALSE,echo=TRUE}
+bcadt[order(age.gr),.N,by=age.gr]
+```
+
+Let's do this with data.table to illustrate the usefullness of it.
+
+```{r p1_28, eval=FALSE,echo=TRUE}
+bcadt<-bcadt[!is.na(bca$HISTGRAD),] #remove missing observations for histological grading
+freq_tab<-bcadt[order(age.gr,HISTGRAD,LN_YESNO), .(.N), by = list(age.gr,HISTGRAD,LN_YESNO)] # make table for all combinations of stratifying variables in order to verify our calculations
+
+res<-bcadt[order(age.gr,HISTGRAD), 
+           .(percentage = round(100*tabulate(LN_YESNO)/.N)),
+           by = list(age.gr,HISTGRAD)]
+
+print(res)
+```
 
 
 

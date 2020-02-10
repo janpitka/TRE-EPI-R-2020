@@ -7,8 +7,7 @@ author:
 - Finnish Cancer Registry  \newline  \newline
 - Lecture 2
 date: "Feb,10 2010 "
-header-includes: \usepackage{graphicx,tikz}
-institute: "janne.pitkaniemi@cancer.fi>"
+institute: "janne.pitkaniemi@cancer.fi"
 output:
   beamer_presentation:
     includes:  
@@ -296,7 +295,7 @@ Key arguments of `glm()`:
 
 ## Example - Colorectal screenning RHS study
 
-![Caption for the picture.](CRC_FIN.png)
+![](CRC_FIN.png)
 
 ## Example - data to R
 
@@ -347,6 +346,7 @@ $\widehat\alpha = -1.4512 = \text{log}(0.2342787) = \text{log}(R_0)$.
 ORmodel <- glm( prop ~ treat, 
        fam = binomial(link='logit'), weights=npat)
 ```
+
 ```{r,comment=NA}
 round( ci.lin(ORmodel, Exp=T)[, -(3:4)], 4)
 ```
