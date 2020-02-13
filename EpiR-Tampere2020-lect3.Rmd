@@ -1,0 +1,312 @@
+---
+title: 
+- Statistical Methods in Cancer Epidemiology using R
+author: 
+- \textbf{Janne Pitkäniemi}  \newline \newline
+- Faculty of Social Sciences, University of Tampere  \newline
+- Finnish Cancer Registry  \newline  \newline
+- Lecture 2b
+date: "Feb,17 2020 "
+institute: "janne.pitkaniemi@cancer.fi"
+output:
+  beamer_presentation:
+    includes:  
+         in_header: beamer_header.tex
+---
+
+# Basic analysis of rates
+
+- Person-time data, hazard and incidence rates, 
+- Comparative parameters of rates and their estimation, 
+- Poisson regression models and comparative parameters, 
+- Adjustment for confounding and evaluation of modification by Poisson regression,
+- Goodness-of-fit evaluation.
+
+Main R functions covered:
+
+- `glm()` 
+- tools for extracting results from a `glm` model object
+
+# Person-time data and incidence rates
+
+Summarized data on
+outcome from cohort study, in which two exposure groups, as to binary risk factor $X$, have been followed-up over individually variable times.
+\begin{center}
+\begin{tabular}{ccc}
+Exposure to         &     Number of       &    Person-\\ 
+ risk factor        &        cases        &        time\\
+      yes        &                        $D_{1}$ &        $Y_{1}$  \\
+      no         &                        $D_{0}$  &        $Y_{0}$\\
+     total        &                        $D_{\+}$  &  $Y_{\+}$\\
+\end{tabular}
+\end{center}
+
+Empirical \textbf{incidence rates} by exposure group:
+$$ I_1 = {D_1}/{Y_1}, \qquad
+    I_0 = {D_0}/{Y_0}. $$ 
+These provide estimates for the true {\bf hazards} 
+(or hazard rates) $\lambda_1$ and $\lambda_0$ assumed constant within exposure categories.
+
+# Hazards and their comparison
+
+Parameters of interest:
+
+- **hazard ratio**
+$$ \rho = \frac{\lambda_1}{\lambda_0} = 
+\frac{ \mbox{hazard among exposed} } { \mbox{hazard among unexposed} }. $$
+
+- **hazard difference**
+$$\delta = \lambda_1 - \lambda_0$$
+
+Null hypothesis $H_0: \rho = 1 \Leftrightarrow \delta = 0$ $\Leftrightarrow$  exposure has no effect.
+
+
+# Estimation of hazard ratio
+
+Point estimator of true hazard ratio $\rho$:
+empirical **incidence rate ratio** (IR)
+$$  \widehat\rho = \mbox{IR}  =  \frac{I_1}{I_0}
+    = \frac{ D_{1} / Y_{1} }{ D_{0} / Y_{0} } 
+    = \frac{ D_{1} / D_{0} }{ Y_{1} / Y_{0} }. $$
+**NB.**  The last form is particularly useful = **exposure odds ratio** (EOR).
+
+Standard error of log(IR),  95% {error factor} & 95% CI for $\rho$: \newline
+
+$$ SEL  =  \sqrt{ \frac{1}{D_1} + \frac{1}{D_0} } $$
+$$EF  =  \exp \{ 1.96 \times \SEL \} $$
+
+$$CI  =  [ \mbox{IR} / \EF ,\ \mbox{IR} \times \EF ].$$ 
+
+
+**NB.** Random error depends inversely on numbers of cases.
+
+# Estimation of hazard difference
+
+Point estimator of true hazard difference $\delta$:
+empirical **incidence rate difference** (ID)
+$$  \widehat\delta = \mbox{ID}  =  I_1 - I_0
+    = \frac{ D_{1}}{ Y_{1} } - \frac{ D_{0}}{ Y_{0} } 
+$$
+
+Standard error of ID,  95% error margin & 95% CI
+
+$$\SE  =  \sqrt{ \frac{I_1^2}{D_1} + \frac{I_0^2}{D_0} } $$
+ 
+$$ \EM  =  1.96 \times \SE $$
+
+
+$$ \CI  =  [ \mbox{ID} - \EM ,\ \mbox{ID} + \EM ]$$
+NB. Random error again depends inversely on no. of cases.
+
+# Example. British doctors' study (Doll & Hill 1966) 
+ 
+CHD mortality in males
+by smoking and age.\\  Cases ($D$),  person-years ($Y$), and mortality rates ($I$ per 
+$10^4$ y).
+\begin{center}
+\begin{tabular}{@{\extracolsep{6pt}}lrrrrrr}
+\multicolumn{1}{c}{ } & 
+\multicolumn{3}{c} {Smokers}         &        
+\multicolumn{3}{c} {Non-smokers}  \\
+Age(y) & $D$ & $Y$ &    $I$ & $D$ & $Y$ &  $I$ \\ \hline
+35-44  & 32  & 52407  & 6   & 2   & 18790 & 1 \\
+45-54  & 104 & 43248  & 24  & 12  & 10673 & 11 \\
+55-64  & 206 & 28612  & 72  & 28  & 5710  & 49 \\
+65-74  & 186 & 12663  & 147 & 28  & 2585  & 108 \\
+75-84  & 102 & 5317   & 192 & 31  & 1462  & 212 \\ \hline
+Total  & 630 & 142247 & 44  & 101 & 39220 &  26 \\ \hline \end{tabular}
+\end{center}
+
+
+# Example (cont'd). 
+
+Crude incidence rates: \newline
+$\qquad I_1 = 630/142247 \ \mbox{y} = 44.3$ per $10^4$ y, and
+$\qquad I_0 = 101/39220 \ \mbox{y}\ = 25.8$ per $10^4$ y. 
+
+Crude estimate of overall hazard ratio $\rho$ with SE, etc.
+
+$$\widehat\rho   =  \mbox{IR} = \frac{ 44.3 }{ 25.8 } = {\bf 1.72} $$
+
+$$\SEL  =  \sqrt{ \frac{1}{630} +  \frac{1}{101} } = {\bf 0.1072} $$
+$$\EF  =  \exp(1.96\times 0.1072) =  {\bf 1.23}$$
+
+
+95% CI for $\rho$:
+
+$$ [ 1.72/1.23, \ 1.72\times 1.23 ]= [{\bf 1. 39},\ {\bf 2.12}] $$  
+
+Two-tailed P < 0.001 .
+
+# Poisson regression model for rate ratio
+- *Random part*: Number of cases in exposure group $j = 0,1$
+$$ D_j \sim \mbox{Poisson}(\lambda_j Y_j) , $$
+where $\mu_j = \lambda_j Y_j$ = *expected number* of cases.
+
+- *Systematic part & link function*: \newline linear predictor $\alpha + \beta X_j$ with *logarithmic* (log) link 
+$$ \log(\lambda_j) = \alpha + \beta X_j , $$
+equivalently on the original hazard scale:
+$$ \lambda_j = \exp(\alpha + \beta X_j) . $$
+
+# Poisson model for rate ratio (cont'd)
+
+Interpretation, \newline
+
+- $X_j=$ $\begin{cases}
+		1  & \text{if exposed } (j=1), \\
+            0  & \text{if unexposed } (j=0),\\
+		\end{cases}$
+		
+- $\alpha=$  $\log(\lambda_0)$, log-baseline rate,
+
+- $\beta=$ $\log(\rho) = \log(\lambda_1/\lambda_0)$, 
+                logarithm of true hazard ratio,
+- $e^{\beta}=$ $\rho$ = true hazard ratio.
+
+Special case of generalized linear models!
+
+
+# Example.  Crude analysis of CHD mortality in R
+
+A ready data frame contains
+
+- four variables: 
+   - `age` = age group -- a factor with 5 levels,
+   - `smok` = smoking: 1 = `yes`, 0 = `no`,
+   - `d` = number of cases, 
+   - `y` = person-years.
+      
+- 10 observations (one for each age-smoking combination).
+
+# Example.  Analysis of CHD rates (cont'd)
+
+```{r, comment=NA,echo=FALSE}
+
+bd<-read.table(textConnection("35-44    1  32 52407   6.1
+ 35-44    0   2 18790   1.1
+ 45-54    1 104 43248  24.0
+ 45-54    0  12 10673  11.2
+ 55-64    1 206 28612  72.0
+ 55-64    0  28  5710  49.0
+ 65-74    1 186 12663 146.9
+ 65-74    0  28  2585 108.3
+ 75-84    1 102  5317 191.8
+ 75-84    0  31  1462 212.0"))
+colnames(bd) <- c("age", "smok", "d", "y", "rate")
+bd
+```
+
+# Fitting Poisson model for crude rate ratio
+
+
+Poisson model with log-link (default) for crude rates
+\scriptsize
+```{r, comment=NA,echo=FALSE,warning=FALSE}
+m1 <- glm(d/y ~ smok, family=poisson(), weights=y, data=bd) 
+summary(m1)
+```
+\normalsize
+
+# Fitting crude rate ratio model (cont'd)
+
+Main results: 
+
+- $\widehat\alpha =  -5.96 = \log(25.8/10^4 \mbox{ y}), \quad$ (SE = 0.10),
+
+- $\widehat\beta = 0.54 = \log(1.72), \quad$ (SE = 0.11)
+
+Function `ci.lin()` transforms results to ratio scale
+
+```{r, comment=NA,echo=FALSE,warning=FALSE}
+library(Epi)
+round(ci.lin(m1, Exp=T)[, -(3:4)], 4 )
+```
+Compare the results with those obtained above using simple
+estimation & SE formulas.
+
+# Fitting crude rate ratio model (cont'd)
+
+The Poisson model above can also be fitted as follows:
+  
+ glm(d ~ smok, fam =poisson(), offset=log(y))
+
+Here `offset` refers to the logarithm of person-years `y` in formula for expected 
+numbers of cases $\mu_j = \lambda_j \times Y_j$:
+$$ 
+\log(\mu_j)  =  \log(\lambda_j Y_j) 
+             =   \log(Y_j) + \log(\lambda_j)  
+             =  \log(Y_j) + \alpha + \beta X_j , 
+$$
+
+$\log(Y_j)$ is an **offset** term in the linear predictor, meaning that it has a fixed value 1 for the regression coefficient. 
+
+# Stratified analysis
+
+Stratification of cohort data with person-time \newline -- 
+at each level $k$ of covariate $Z$ results are summarized:
+
+\begin{center}
+\begin{tabular}{ccc}
+Exposure to & Number of         & Person- \\
+risk factor & cases       & time\\ \hline
+ yes        & $D_{1k}$    & $Y_{1k}$ \\
+ no         & $D_{0k}$    & $Y_{0k}$ \\ \hline
+Total       & $D_{\+ k}$  & $Y_{\+ k}$ \\
+\end{tabular}
+\end{center}
+
+Stratum-specific rates by exposure group: 
+$$ I_{1k}  = \frac{ D_{1k} }{ Y_{1k} } , \qquad
+   I_{0k}  = \frac{ D_{0k} }{ Y_{0k} } .$$
+
+
+# Stratum-specific comparisons
+
+Let $\lambda_{jk}$ be true rate for exposure group $j$ ($j=0,1)$\newline 
+and stratum $k$ ($k=0, \dots, K$). 
+Let also
+$$ \rho_k = \frac{ \lambda_{1k} } { \lambda_{0k} }, \qquad \delta_k = \lambda_{1k} - \lambda_{0k}$$
+
+be the rate ratios and rate differences between the exposure groups in stratum $k$.
+
+Two simple models assuming homogeneity: 
+
+- common rate ratio: $\rho_k = \rho$ for all $k$,
+- common rate difference: $\delta_k = \delta$ for all $k$.
+
+Only one of these can in principle hold.  However, almost always neither homogeneity assumption is exactly true.   
+
+# Example. British male doctors (cont'd)
+
+
+CHD mortality rates (per $10^4$ y) and numbers of cases ($D$)
+by age and cigarette smoking.
+
+Mortality rate differences (ID) and ratios (IR) in age strata.
+
+\scriptsize
+```{r, comment=NA,echo=T,warning=FALSE}
+bd$ID<-0.0
+bd$ID[bd$smok==1]<-bd$rate[bd$smok==1]-bd$rate[bd$smok==0]
+bd$IR<-1.0
+bd$IR[bd$smok==1]<-round(bd$rate[bd$smok==1]/bd$rate[bd$smok==0],1)
+bd[order(bd$age,bd$smok),]
+rbind(bd,c("Crude",NA, sum(bd$d), sum(bd$y),sum(bd$d)/sum(bd$y),NA,NA))
+```
+\normalsize
+
+# Example (cont'd).
+
+-Both types of comparative parameter, rate ratios $\rho_k$ and rate differences $\delta_k$ appear heterogenous, because
+
+- ID increases by age -- at least up to 75 y,
+-  IR decreases by age.
+
+- Part of this observed heterogeneity may be due to random variation. 
+- Yet, any single-parameter comparison by common rate ratio or rate difference  
+
+may not adequately capture the
+joint pattern of true rates.
+
+
+$\quad \Rightarrow$ Effect modification must be evaluated.
