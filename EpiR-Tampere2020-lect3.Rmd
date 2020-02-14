@@ -203,7 +203,7 @@ Poisson model with log-link (default) for crude rates
 \scriptsize
 ```{r, comment=NA,echo=FALSE,warning=FALSE}
 m1 <- glm(d/y ~ smok, family=poisson(), weights=y, data=bd) 
-summary(m1)
+coef(summary(m1))
 ```
 \normalsize
 
@@ -285,13 +285,16 @@ by age and cigarette smoking.
 Mortality rate differences (ID) and ratios (IR) in age strata.
 
 \scriptsize
-```{r, comment=NA,echo=T,warning=FALSE}
-bd$ID<-0.0
-bd$ID[bd$smok==1]<-bd$rate[bd$smok==1]-bd$rate[bd$smok==0]
-bd$IR<-1.0
-bd$IR[bd$smok==1]<-round(bd$rate[bd$smok==1]/bd$rate[bd$smok==0],1)
-bd[order(bd$age,bd$smok),]
-rbind(bd,c("Crude",NA, sum(bd$d), sum(bd$y),sum(bd$d)/sum(bd$y),NA,NA))
+```{r, comment=NA,echo=F,warning=FALSE}
+dbs<-bd
+dbs$ID<-0.0
+dbs$ID[dbs$smok==1]<-dbs$rate[dbs$smok==1]-dbs$rate[dbs$smok==0]
+dbs$IR<-1.0
+dbs$IR[dbs$smok==1]<-round(dbs$rate[dbs$smok==1]/dbs$rate[dbs$smok==0],1)
+tot1<-c("35-84",1, sum(dbs$d[dbs$smok==1]), sum(dbs$y[dbs$smok==1]),round(10000*(sum(dbs$d[dbs$smok==1])/sum(dbs$y[dbs$smok==1]))),0.0,1.0)
+tot0<-c("35-84",0, sum(dbs$d[dbs$smok==0]), sum(dbs$y[dbs$smok==0]),round(10000*(sum(dbs$d[dbs$smok==0])/sum(dbs$y[dbs$smok==0]))),0.0,1.0)
+dbs<-rbind(dbs,tot1,tot0)
+dbs[order(dbs$age,dbs$smok),]
 ```
 \normalsize
 
@@ -369,19 +372,9 @@ cbind(data.frame(bd$age), model.matrix(m2))
 
 \scriptsize
 ```{r, comment=NA,echo=T,warning=FALSE}
- summary(m2)
+ coef(summary(m2))
 ```
 
-Coefficients:            
-                Estimate Std. Error z value Pr(>|z|)
-(Intercept)      -7.9193     0.1917 -41.301  < 2e-16
-age 45-54         1.4840     0.1951   7.607 2.81e-14
-age 55-64         2.6275     0.1837  14.302  < 2e-16
-age 65-74         3.3505     0.1848  18.132  < 2e-16
-age 75-84         3.7001     0.1922  19.251  < 2e-16
-smok              0.3545     0.1074   3.302  0.00096
-
-Residual deviance: 12.132 on 4 degrees of freedom
 
 \normalsize
 
@@ -409,8 +402,9 @@ In R the two first can be extracted directly from the\\ fitted model object `m2`
 \small
 
 ```{r, comment=NA,echo=T,warning=FALSE}
-  fit.eta <- m2$linear.predictor
-  fit.rate <- round(1000*fitted(m2),1); fit.mu <- bd$y*fit.rate
+  bd$fit.eta <- m2$linear.predictor
+  bd$fit.rate <- fitted(m2); 
+  bd$fit.mu <- bd$y*bd$fit.rate
 ```
 
 \normalsize
@@ -439,10 +433,154 @@ $\rightarrow$ lack of fit for that cell.
 
 # Example.  Fitted values \& residuals
  
-\small
+\scriptsize
 
 ```{r, comment=NA,echo=T,warning=FALSE}
-data.frame(bd$age,bd$smok,bd$rate,fit.rate)
+bd$fit.rate<-round(10000*bd$fit.rate,1)
+bd$fit.mu<-round(bd$fit.mu,1)
+bd$res.D<-round(resid(m2,"dev"),2)
+bd$res.P<-round(resid(m2,"pear"),2)
+data.frame(bd$age,bd$smok,bd$d,bd$rate,bd$fit.rate,bd$fit.mu,bd$res.D,bd$res.P)
 ```
 NB! Fitted rate ratios between smokers and non-smokers:
 $$ \frac{5.2}{3.6} = \dots = \frac{209.7}{147.1} = 1.43 \ \text{at each age level}$$
+
+# Summary goodness-of-fit statistics
+
+- **Deviance** (Dev)  
+         = sum of squares of deviance residuals,
+-  **Pearson's** $X^2$ (chi-square) 
+          = s.s. of Pearson residuals  
+
+Assume that 
+
+- the model is "true", and 
+- the data are not *sparse*, i.e. numbers of cases in each line of the (grouped) data matrix are sufficiently big.
+
+Under these assumptions 
+
+- residuals $d_{jk}$ and $r_{jk}$ all approximately Normal(0,1),
+- Both Dev and $X^2$ are approximately 
+       $\chi^2$-distributed with 
+       *degrees of freedom* (df) being equal to the \newline
+       *residual* df = no. of obs -- no. of coeff's 
+- Expected value of these statistics 
+      = residual df.
+
+# Goodness of fit (cont'd)
+
+In our example 
+
+-  "large" residuals in extreme age groups,
+- $X^2$ and Dev 2.8 to 3 times higher than df.
+
+$\rightarrow$ Some lack of fit with assumed model.
+
+($P$-values: P($X^2$ $>$ 11.2) = 0.025, and \newline
+  P(Dev $>$ 12.1) = 0.017)
+  
+#  Possible causes for lack of fit
+
+- Unrealistic random part (Poisson)?
+- Misspecified systematic part?
+      - Wrong functional form for effects? \medskip
+      - Missing important risk factors? \medskip
+      - Failure to take into account *effect modification* or "interaction".
+    
+In this example the last possibility is very likely:  \newline 
+the rate ratios are clearly heterogenous. 
+
+Yet, inclusion of 4 interaction parameters
+would lead to a saturated model.
+
+# Continuous covariates
+ 
+Stratified analysis is adequate with
+
+- qualitative exposure factor with few levels,
+- few qualitative covariates with few levels.
+
+Effects of continous factors can often be 
+described by smooth functions with small number of parameters.
+
+Stratification requires categorization of 
+continuous variables and level specific parameters 
+
+$\Rightarrow$ loss of efficiency.
+
+# Continuous covariates (cont'd)
+
+Regression models can accommodate functions of 
+continuous variables 
+
+- (+) more parsimonious models, \medskip 
+- (+) greater flexibility in modelling, \medskip
+- (-) more opportunities for misspecification,
+*i.e.* creation of "wrong" 
+models.
+
+# Example (cont'd)
+
+Treat age as continuous variable taking midpoint of each ageband
+(40, 50, $\dots$, 80)
+as quantitative age value. 
+
+Include linear and quadratic term of age applying 
+
+- centering at 60 years, and 
+- scaling, *i.e.* division by 10 years
+
+This is achieved by
+
+\small
+```{r, comment=NA,echo=T,warning=FALSE}
+bd$A.L <- as.numeric(bd$age)-3 
+bd$A.Q <- bd$A.L*bd$A.L - 2
+```
+\normalsize   
+
+# Example (cont'd)}
+ 
+Model with linear and quadratic terms for age, and
+interaction between linear term of age and smoking:
+\small
+
+```{r, comment=NA,echo=T,warning=FALSE}
+ m3 <- glm( d/y ~ A.L + A.Q + smok + A.L:smok,
+ family=poisson( ), weights=y,data=bd )
+round(ci.lin(m3, Exp=T)[, -(3:4)], 4 )
+```
+\normalsize
+Interpretation of parameters?
+
+# Example (cont'd)
+
+Observed and fitted rates \& fitted 
+rate ratios between smokers and non-smokers
+in each ageband
+\scriptsize
+```{r, comment=NA,echo=F,warning=FALSE}
+  bd$fit.eta <- m3$linear.predictor
+  bd$fit.rate <- fitted(m3); 
+  bd$fit.mu <- bd$y*bd$fit.rate
+
+bd$fit.rate<-round(10000*bd$fit.rate,1)
+bd$fit.mu<-round(bd$fit.mu,1)
+bd$res.D<-round(resid(m3,"dev"),2)
+bd$res.P<-round(resid(m3,"pear"),2)
+data.frame(bd$age,bd$smok,bd$d,bd$rate,bd$fit.rate,bd$fit.mu,bd$res.D,bd$res.P)
+```
+\normalsize
+Residual Dev = 1.64  df = 5; The fit is excellent! 
+
+# Some closing remarks
+
+- **Hazard differences** can also be estimated by
+Poisson-modelling, because `link='identity'`
+can be coupled with `family=poisson`  in `glm()`.
+- Poisson models can also be fitted on **ungrouped data**. Units of observations may even be shorter intervals of total individual follow-up times: 
+- Each member of the study population can contribute several **separate time-slots** as observational units. 
+- More about **time-splitting** in the next lectures.
+- With continuous covariates it may be difficult to keep
+hazards positive when the *additive hazards*
+model with `link='identity'` is attempted to be fitted.
