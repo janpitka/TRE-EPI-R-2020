@@ -310,3 +310,139 @@ joint pattern of true rates.
 
 
 $\quad \Rightarrow$ Effect modification must be evaluated.
+
+# Rate ratio adjustment by Poisson model
+
+Define Poisson regression model for
+
+- one binary exposure variable $X$ and 
+- one categorical (polytomous)  factor $Z$.
+   - *Random part*: No. of cases in exposure group $j$ $(j=0,1)$
+and covariate level $k$ $(k = 1, \dots, K)$ is 
+$D_{jk} \sim Poisson( \lambda_{jk} Y_{jk} )$ 
+   - *Systematic part*: $log(\lambda_{jk}) = \alpha + \beta X_j + \gamma_k,$ where $X_j$ is (0/1)
+
+
+- $\alpha=\log(\lambda_{01})$ = log-baseline rate, 
+- $\gamma_k=$ $\log(\lambda_{jk}/\lambda_{j1})$,
+- $\beta=$ $\log(\rho)=log(\lambda_{1k}/\lambda_{0k})$,
+- $e^{\beta}=$ $\rho$ = true rate ratio for the effect of exposure to $X$.
+
+*How do we read this?*
+
+# Implications of model definition
+
+
+- homogeneity of true rate ratio $\rho_k = \rho$ for $X$ \newline
+ across levels of $Z$ is 	assumed,
+-  inclusion of $Z$ leads to adjustment for $Z$ in estimating the common effect of $X$,
+-  $e^{\gamma_k}$ = rate ratio for level $k$ of $Z$ *vs.* level 1
+      is the same in both exposure groups ($j=0,1$) \newline
+      $\Rightarrow$ homogeneity of
+      the effect of $Z$ is assumed, too.
+     
+- level $k=1$ is chosen as the *reference* level for $Z$\newline (like 
+	``unexposed'' is reference for $X$), 
+- before model fitting, binary *indicator* variables $Z_k$ 
+	for levels $k=1, \dots, K$ of $Z$ must be defined:
+	$$ Z_k  =\begin{cases}
+		   1, & \mbox{if observation belongs to level } k, \\
+               0, & \mbox{ otherwise}.
+		   \end{cases}
+	$$
+
+# Example.  CHD in British doctors (cont'd)
+
+Factor `age` has $5$ levels. \newline
+Indicator variables for each age level are generated in R when defining the model, and the following model matrix is returned.
+
+\small
+
+```{r, comment=NA,echo=T,warning=FALSE}
+ m2 <- glm( d/y ~ age + smok,family=poisson(link=log),
+            weights=y,data=bd)
+cbind(data.frame(bd$age), model.matrix(m2))
+```
+\normalsize
+
+# Summary of the adjustment model
+
+\scriptsize
+```{r, comment=NA,echo=T,warning=FALSE}
+ summary(m2)
+```
+
+Coefficients:            
+                Estimate Std. Error z value Pr(>|z|)
+(Intercept)      -7.9193     0.1917 -41.301  < 2e-16
+age 45-54         1.4840     0.1951   7.607 2.81e-14
+age 55-64         2.6275     0.1837  14.302  < 2e-16
+age 65-74         3.3505     0.1848  18.132  < 2e-16
+age 75-84         3.7001     0.1922  19.251  < 2e-16
+smok              0.3545     0.1074   3.302  0.00096
+
+Residual deviance: 12.132 on 4 degrees of freedom
+
+\normalsize
+
+# Fitting adjustment model (cont'd)
+
+Results on the ratio scale
+
+```{r, comment=NA,echo=T,warning=FALSE}
+round(ci.lin(m2, Exp=T)[, 5:7], 4 )
+```
+
+$\Rightarrow$ Age-adjusted rate ratio [95\% CI] for smoking:
+$$\widehat \rho = {\bf 1.43} \ [{\bf 1.16}, {\bf 1.76}]$$
+
+# Fitted values & residuals
+
+From the estimated coefficients we can calculate \newline
+ **fitted**
+ linear predictors $\widehat \eta_{jk}$, hazards $\widehat \lambda_{jk}$ 
+and numbers $\widehat \mu_{jk}$:
+$$ \widehat \eta_{jk}  =  \widehat\alpha + \widehat\beta x + \widehat\gamma_k $$
+$$ \widehat \lambda_{jk}  =  \mbox{exp}(\widehat \eta_{jk}), \quad \widehat\mu_{jk} = \widehat\lambda_{jk} Y_{jk} $$
+
+In R the two first can be extracted directly from the\\ fitted model object `m2`:
+\small
+
+```{r, comment=NA,echo=T,warning=FALSE}
+  fit.eta <- m2$linear.predictor
+  fit.rate <- round(1000*fitted(m2),1); fit.mu <- bd$y*fit.rate
+```
+
+\normalsize
+
+**NB**.  If count `d` is declared as response with ` log(y)` as offset, then `fitted()`
+returns the fitted numbers of cases $\widehat \mu_{jk}$.
+
+# Fitted values \& residuals (cont'd)
+
+**Deviance residual** for cell $jk$ (`resid(m2)` in R):
+$$ d_{jk}  =  \mbox{sign}(Y_{jk} - \widehat\mu_{jk}) 
+                    \times 
+                   \sqrt{ 2 \left\lbrace
+                         Y_{jk} \log \left( \frac{ Y_{jk} }{ \widehat\mu_{jk} } \right)
+                         - (Y_{jk} - \widehat\mu_{jk}) \right\rbrace } 
+$$
+
+**Pearson residual** (`resid(m2, type="pearson")`):
+$$ r_{jk} = \frac{ Y_{jk} -  \widehat\mu_{jk} }
+          {\sqrt{  \widehat\mu_{jk} } } . $$
+Small value of either residual\newline  
+$\rightarrow$ consistency of observation with model.
+
+``Large'' (in absolute value) residual\newline
+$\rightarrow$ lack of fit for that cell.
+
+# Example.  Fitted values \& residuals
+ 
+\small
+
+```{r, comment=NA,echo=T,warning=FALSE}
+data.frame(bd$age,bd$smok,bd$rate,fit.rate)
+```
+NB! Fitted rate ratios between smokers and non-smokers:
+$$ \frac{5.2}{3.6} = \dots = \frac{209.7}{147.1} = 1.43 \ \text{at each age level}$$
