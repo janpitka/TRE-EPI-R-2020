@@ -26,6 +26,54 @@ Consider another **factor** $Z$ which is
 $\Rightarrow$ Adjustment for possible *confounding* and evaluation of *effect modification* needed.
 
 
+# Confounder
+
+- **Confounder**s (Z) are variables that 
+   - is both an ancestor of the exposure (X) 
+   - and an ancestor of the outcome (Y)
+   (along a path that does not include the exposure). 
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE,comment=NA, fig.height=4.5}
+library(ggdag)
+theme_set(theme_dag())
+dagify(y ~ x,
+       y ~ z,
+       x ~ z) %>% 
+  ggdag()
+
+```
+
+# Effect modification 
+
+- Unfortunately, there's not an agreed upon way to show effect modification/moderation/interaction. 
+- effects are assumed to be heterogeneous by default in causal models. (JP)
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE,comment=NA, fig.height=4.5}
+
+library(tidyverse)
+
+coords <- tribble(
+  ~name,    ~x,  ~y,
+  "x",      1,   1,
+  "y",      2,   1,
+  "m",      1.5, 0,
+  "holder", 1.5, 1.05
+)
+
+dagify(
+  y ~ x,
+  holder ~ m,
+  coords = coords
+) %>% 
+  ggplot(aes(x = x, y = y, xend = xend, yend = yend)) + 
+    geom_dag_point(data = function(x) filter(x, name != "holder")) +
+    geom_dag_edges() + 
+    geom_dag_text(data = function(x) filter(x, name != "holder")) +
+    theme_dag()
+```
+
+
 # Example: OS vs. PN (cont'd)
 
 Failure of treatment depends also on initial condition

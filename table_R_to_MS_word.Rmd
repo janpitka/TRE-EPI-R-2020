@@ -1,0 +1,39 @@
+---
+title: "R to word tables"
+author: "Janne Pitkäniemi"
+date: "17 2 2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is one way of getting a table to MS-word by knitr (kable)
+and tabulation using janitor and install tidyverse for the pipes (%>%).
+
+
+```{r table1, echo=FALSE,comment=NA,warning=FALSE,message=FALSE}
+library(haven)
+library(Epi)
+library(knitr)
+library(data.table)
+library(janitor)
+
+bca <- data.table(read_sav("GitHub/TRE-EPI-R-2020/breastca.sav"))
+bca$age.gr <- cut(bca$AGE, br=c(20, 50, 65, 90), right=F)
+bca$HG <- as.factor(bca$HISTGRAD)
+
+res<-bca %>%
+  tabyl(age.gr, HG) %>%
+  adorn_totals("col") %>%
+  adorn_percentages("row") %>%
+  adorn_pct_formatting(digits = 2) %>%
+  adorn_ns() %>%
+  adorn_title()
+
+kable(res)
+```
+
