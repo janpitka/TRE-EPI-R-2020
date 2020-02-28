@@ -1,0 +1,673 @@
+---
+title: 
+- Statistical Methods in Cancer Epidemiology \newline using R
+author: 
+- \textbf{Karri Seppä}  \newline \newline
+- Finnish Cancer Registry  \newline  \newline
+- Lecture 4
+date: "Mar 2, 2020"
+institute: "karri.seppa@cancer.fi"
+output:
+  beamer_presentation:
+    includes:  
+         in_header: beamer_header.tex
+editor_options: 
+  chunk_output_type: console
+---
+
+## Time splitting
+
+Contents:
+
+1. Basic concepts of time to event analysis
+\medskip
+2. Piecewise constant hazards model and \newline
+age-specific incidence rates
+\medskip
+3. Splitting follow-up times by age
+\medskip
+4. Accounting for current age in rate ratio estimation 
+\bigskip
+
+Main R functions to be covered, all in \texttt{Epi} package 
+
+- \texttt{Lexis()} 
+- \texttt{splitLexis()}
+- \texttt{timeBand()} 
+
+
+## Time to event analysis
+
+Analysis of incidences = analysis of \textit{times to event} or \textit{failure times} or \textit{survival times} (censored).
+
+Mathematical concepts:
+\begin{align*}
+    T & =  \mbox{ time to outcome event --  random variable,} \\
+ S(t) & =  P(T>t) = \mbox{ {\bf survival} function of $T$,} \\
+     & =  \mbox{ probability of avoiding 
+the event up to given time }t,\\
+\lambda(t)  = & -S'(t)/S(t) = 
+\mbox{ {\bf intensity} or {\bf hazard} function}, \\
+\Lambda(t) & =  \int_0^t \lambda(u)du = - \log S(t)
+   = \mbox{\bf cumulative hazard}, \\
+  F(t) & =  1-S(t) = 1-\exp\{ -\Lambda(t) \} 
+  = \mbox{{\bf risk} function} \\
+    & =  \mbox{ probability of the outcome to occur by }t   \\
+    & =  \mbox{ cumulative distribution function of }T.
+\end{align*}
+
+
+## Hazard rate or intensity function
+
+Can be viewed as \textit{theoretical incidence rate}. Formally
+$$ \lambda(t) = \lim_{\Delta \rightarrow 0}
+ \frac{P(t < T \leq t+\Delta \mid T > t)}{\Delta} $$
+\begin{enumerate}[$\approx$]
+\item Probability of failure occurring 
+in a short interval \\
+ $]t, t+ \Delta]$, given ``survival'' or
+avoidance of event 
+ up to its start $t$,  divided by the interval length.
+\end{enumerate}
+This is equivalent to saying that over this short interval
+$$ 
+\mbox{risk } \approx  \mbox{ rate }\times 
+\mbox{ length of interval} 
+$$
+or $\qquad P(t < T \leq t+\Delta \mid T > t) \ 
+ \approx \ \lambda(t)\times \Delta$.
+
+
+## Exponential or constant hazard model
+
+Simplest probability model for time to event: \newline
+\textbf{Exponential distribution}, Exp($\lambda$), in which
+$$
+ \lambda(t) = \lambda \mbox{  (constant)}\quad 
+\Rightarrow\quad 
+ \Lambda(t) = - \log S(t) = \lambda t
+$$
+Analysis of failure data of $n$ individuals. 
+For subject $i$ let
+\begin{align*}
+y_i & = \mbox{ time to event or 
+time to censoring,}\quad
+  Y = \sum y_i \\
+d_i & = \mbox{ indicator for 
+observing the event,}\quad
+  D = \sum d_i
+\end{align*}
+Exp($\lambda$) model $\Rightarrow$ 
+\textbf{Likelihood function} of $\lambda$ is
+$$ L(\lambda) = \prod_{i=1}^n \lambda(y_i)^{d_i} S(y_i)
+     =  \prod_{i=1}^n \lambda^{d_i} e^{-\lambda y_i}
+             \ = \ \exp( D \log \lambda -\lambda Y) $$
+
+## Constant rate -- Poisson model
+
+This is actually equivalent to the \textit{Poisson-likelihood},
+\textit{i.e.} likelihood of $\lambda$
+assuming that the number of cases 
+$D$ is distributed according to the \textbf{Poisson
+distribution} with expected value $\lambda Y$.
+
+\bigskip
+With randomly censored exponential times 
+$D$ is only \newline
+approximately Poisson. This is sufficient, though,
+for likelihood-based (& asymptotic frequentist) inference.
+ 
+ \bigskip
+Solving the \textit{score equation}: \ $d \log L(\lambda)/d\lambda = 0$ \newline
+$\rightarrow$ \textbf{maximum likelihood estimator} (MLE) of $\lambda$ is
+$$
+ \widehat\lambda = \frac{D}{Y}  = 
+  \frac{\mbox{number of cases}}
+  {\mbox{total person-time}} 
+  = \mbox{ empirical incidence rate!}
+$$
+
+
+## Time to event -- when to start the clock?
+
+Incidence can be studied on various time scales, \textit{e.g.}
+\begin{itemize}
+\item age (starting point = birth),
+\item exposure time (first exposure),
+\item follow-up time (entry to study),
+\item duration of disease (diagnosis).
+\end{itemize}
+Age is usully the strongest time-dependent 
+determinant of health 
+outcomes.
+
+\medskip
+ Age is also often correlated with
+duration of ``chronic'' exposure (\textit{e.g.} years of smoking).
+
+\medskip
+Therefore, adjustment for \textit{current age} is needed rather than
+for \textit{age at entry} to follow-up (like in clinical survival studies).
+
+
+## Age to event split into agebands
+
+Let $T$ = age at which outcome event occurs. \newline
+Parametric form of $\lambda(t)$, hazard by age -- usually unknown.
+
+\medskip
+\textbf{Piecewise exponential model} or \textbf{piecewise constant hazards' model} -- an approximation for $\lambda(t)$:
+$$ \lambda(t) = \lambda_k, \qquad t \in \ ]a_{k-1}, a_k],\quad \Delta_k = a_k - a_{k-1}, $$
+where cutpoints $0 = a_0 < a_1 < \dots < a_K$ divide the age range into
+disjoint \textbf{agebands}, each with constant rate.
+
+\medskip
+In chronic disease epidemiology agebands with 
+$\Delta_k = 5$ years (0-4, 5-9, $\dots$, 80-84)
+or 10 years are commonly used.
+
+
+## Age-specific incidence rates
+
+For empirical estimation of rates we calculate 
+in each ageband
+\begin{align*}
+ D_k & = \mbox{ number of cases occurring in ageband } k, \\
+ Y_k & = \sum_{i=1}^n y_{ik} = \mbox{ total person-time in ageband } k,
+\end{align*}
+where $y_{ik}$ is the time slot that subject $i$ spends
+in ageband $k$ out of his/her whole \textbf{follow-up
+time} (from \textbf{entry} to \textbf{exit}).
+
+ML estimators of  $\lambda_1, \dots, \lambda_K$: 
+\textbf{age-specific incidence rates}
+$$ \widehat\lambda_k = I_k = {D_k}/{Y_k}, \quad k = 1, \dots, K $$
+based on log-likelihood 
+$\ \ \log L = \sum_{k} (D_k \log \lambda_k - \lambda_k Y_k)$.
+
+
+## Cumulative rates \& risks
+
+In this model, the cumulative hazard and risk functions are
+\begin{align*}
+ \Lambda (t) & = \sum_{a_j < t} \lambda_j \Delta_j + \lambda_k(t - a_{k-1}),\qquad t \in \ ]a_{k-1}, a_k] \\
+ F(t) & = 1 - S(t) = 1 - \exp\{ - \Lambda(t) \}, 
+\end{align*}
+the latter assuming that no \textbf{competing risks} are present.
+
+\medskip
+Estimation: Plug in empirical rates $\widehat\lambda_j = D_j/Y_j$ to get
+the cumulative rate $C$ and incidence proportion $R$ by $t$:
+\begin{align*}
+  C & = \widehat{\Lambda} (t) =  \sum_{a_j < t} \widehat\lambda_j \Delta_j + \widehat\lambda_k (t - a_{k-1}),\qquad t \in \ ]a_{k-1}, a_k] \\
+  R & = \widehat{F}(t)  = 1 - \widehat{S}(t) = 1 - \exp\{ - \widehat{\Lambda}(t) \}
+\end{align*}
+
+## Example: Follow-up of a small geriatric cohort
+
+\setlength{\unitlength}{1.2pt}
+\begin{center}
+\includegraphics[width=10cm,height=6cm ]{lifelines}
+\end{center}
+No's of cases/p-years \& rates (/100 y) in 5-y agebands: 
+$$ {1}/{21} = 4.8, \quad {1}/{16}= 6.2, \quad {2}/{16.5} = 12.1$$
+
+<!---\bes
+D_1 & = & 1, \quad D_2 =  1, \quad D_3  =  2 \\
+Y_1 & = & 14, \ \ Y_2  = 17, \ \  Y_3  =  14 \mbox{ years}\\
+I_1 & = & 7.1, \ \ I_2  = 5.9, \ \ I_3  =  14.3 \mbox{ per 100 y} 
+\ees -->
+
+## Splitting follow-up by \texttt{Lexis()} in package \texttt{Epi}
+
+Individual ages at entry and at exit, as well as outcomes
+are assigned into vectors and stored in a data frame \texttt{coh}:  
+\small
+```{r, comment=NA,echo=T,warning=FALSE}
+ag.entry <- c(69, 70, 70.5, 71, 72, 76.9, 81, 81.9)
+ag.exit <- c(83.5, 74.5, 76, 77, 85, 82, 84, 85)
+event <- c(0,1,0,1,0,1,1,0) ; ind <- 1:8 
+coh <- data.frame( ind, ag.entry, ag.exit, event)
+```
+\normalsize
+Function \texttt{Lexis()} specifies the
+time scale(s) to be considered. It 
+ creates an enriched data frame
+belonging to class \texttt{Lexis}.
+\small
+```{r, comment=NA,echo=T,warning=FALSE,results='hide'}
+library(Epi)
+coh.L <- Lexis(entry = list(age = ag.entry), 
+               exit = list(age = ag.exit), 
+               exit.status = event, data = coh, id = ind)
+```
+\normalsize
+
+
+## Data frame of class \texttt{Lexis}
+
+\scriptsize
+```{r, comment=NA,echo=T,warning=FALSE}
+coh.L
+```
+\normalsize
+Interpretation of new columns
+\begin{align*}
+ \texttt{age} & =  \text{age at entry to follow-up},\\
+ \texttt{lex.dur} & =  \text{duration of follow-up},\\
+ \texttt{lex.Cst} & =  \text{current status at entry}, \\
+  \texttt{lex.Xst} & =  \text{status at exit from follow-up}.
+\end{align*}
+
+
+## Splitting follow-up times by agebands
+
+\medskip
+Function \texttt{splitLexis()} splits individual follow-up times
+into given agebands and expands the data frame.
+\small
+```{r, comment=NA,echo=T,warning=FALSE}
+coh.A <- splitLexis(coh.L, 
+       br = c(70,75,80,85), time.scale="age")
+```
+\scriptsize
+```{r, comment=NA,echo=T,warning=FALSE}
+coh.A[-c(8:12),]
+```
+\normalsize
+
+
+## Splitted \texttt{Lexis} object
+
+- Function \texttt{splitLexis()} expanded the original data frame such that
+for all cohort members one or more rows were created, one for
+each ageband into which a subject contributes person time.
+\medskip
+- Ex: Subject 1 has been under follow-up in all agebands considered, but subjects 7 and 8 only in 80$-<85$ y.
+\medskip
+- Function \texttt{timeBand()} 
+converts variable \texttt{age} into 
+factor \texttt{ageband}. Also, shorthand
+names for person-time slots and occurrence of outcome event are given.
+\small
+```{r, comment=NA,echo=T,warning=FALSE}
+coh.A$ageband <- timeBand(coh.A, "age", "factor") 
+coh.A$y_ik <- coh.A$lex.dur # person-time slot
+coh.A$d_ik <- coh.A$lex.Xst # occurrence of outcome
+```
+\normalsize
+
+
+## Splitted \texttt{Lexis} object (cont'd)
+
+:::::: {.columns}
+
+::: {.column width="40%"}
+\scriptsize
+```{r, comment=NA,echo=T}
+coh.A[, c(1,10:12)] 
+```
+\normalsize
+:::
+
+::: {.column width="60%"}
+<!---Interpretation of variable names in \texttt{lexis}:-->
+\begin{enumerate}[ ]
+\item
+\item
+\item
+\item \verb|lex.id| = subject \\ $\quad$index 
+in original \\ $\quad$data frame,
+\item \verb|ageband| = ageband \\
+            $\quad$ and  its limits, 
+\item \verb|y_ik| = person-time slot 
+        \\ $\quad$ 
+       spent in ageband
+\item \verb|d_ik| = indicator for \\
+   $\quad$ event occurring \\
+   $\quad$ in ageband.
+\end{enumerate}
+:::
+::::::
+
+ \bigskip
+Subject 1's follow-up time ($14.5\mbox{ y} = 1+ 5 + 5 + 3.5\mbox{ y}$)
+is split into 4 agebands,
+$\dots,$ subject 8 contributes only to 1 ageband.
+
+
+## Tabulation of cases, rates etc. by ageband
+
+Event indicators \& person-time slots
+are summed over the rows of the split-expanded data
+frame in categories of \texttt{ageband}: 
+\small
+```{r, comment=NA,echo=T}
+D <- with(coh.A, tapply(d_ik, ageband, sum))
+Y <- with(coh.A, tapply(y_ik, ageband, sum))
+```
+\normalsize
+Incidence rates ($I$), cumulative rates ($C$) and incidence proportions ($R$), 
+the latter two by the end of each \texttt{ageband}:
+\small 
+```{r, comment=NA,echo=T}
+I <- 100*D/Y; C <- cumsum((D/Y)*5); R <- 1-exp(-C)
+tab <- round(cbind(D,Y,I,C,R),3)[2:4, ]
+```
+\normalsize
+
+
+## Age standardised incidence rate
+
+Direct age standardisation
+
+- e.g. to the World Standard population
+
+\scriptsize
+```{r, comment=NA,echo=T,eval=F}
+library(popEpi)
+stdpop18
+```
+\vspace{-0.5cm}
+```{r, comment=NA,echo=F}
+library(popEpi)
+stdpop18
+```
+
+
+## Age standardised incidence rate (cont'd)
+
+Weighted average of age-specific incidence rates $I_k$
+$$
+\sum_k w_kI_k, \ \text{ where }\  \sum_k w_k = 1
+$$
+\scriptsize
+```{r, comment=NA,echo=T}
+tab <- cbind(tab,stdpop18[15:17,1:2])
+tab$w <- tab$world/sum(tab$world)
+tab
+#age-standardised incidence per 100 person years
+sum(tab$w*tab$I)
+#non-standardised incidence per 100 person years
+100*sum(tab$D)/sum(tab$Y)
+```
+
+
+## Age standardised incidence rate (cont'd)
+
+$$
+\text{SE}\left[\log\left(\sum_k w_kI_k\right)\right]\approx \frac{1}{\sum_k w_kI_k} \sqrt{\sum_k  \frac{w_k^2 d_k}{y_k^2}}
+$$
+
+\scriptsize
+```{r, comment=NA,echo=T}
+std.rate <- sum(tab$w*tab$D/tab$Y)
+SE.std.rate <- sqrt( sum(tab$w^2*tab$D/tab$Y^2) )
+exp( log(std.rate)+1.96*(1/std.rate)*SE.std.rate*c(-1,1) )
+```
+
+
+```{r, comment=NA,echo=T}
+rate(tab,obs="D",pyrs="Y",adjust="agegroup",weights=tab$w)[,c(3,5:6)]
+```
+
+\normalsize
+- Age-standardised incidence in age group 70-84 is:
+    - 6.2 per 100 person years, 95% CI (2.1, 18.6)
+
+
+
+
+## Example: The Diet Study (see C\&H)
+
+A cohort of 337 men in three occupational groups in England, \newline
+aged 30 to 67 y at entry, recruited in '50s and '60s, \newline 
+followed-up until mid '70s for incidence of CHD events. 
+
+\bigskip
+Risk factors of interest, measured by dietary survey at entry.
+\begin{align*}
+\mbox{\texttt{energy}}  = & \mbox{ total energy intake (kcal/d)}, \\
+\mbox{\texttt{energy.grp}}  = & \mbox{\texttt{ energy} dichotomized:} \\ 
+  { }  & \mbox{ 1: ``$<=$2750 KCals'', 2: ``$>$2750 KCals''},\\ 
+\mbox{\texttt{fat}}  = & \mbox{ fat intake (g/d)}, \\
+\mbox{\texttt{fibre}}  = & \mbox{ dietary fibre intake (g/d),} \\
+       {  } & \mbox{\texttt{ height, weight, bmi, }}etc.
+\end{align*}
+
+
+## Important dates and outcome event
+
+The data set \texttt{diet} in \texttt{Epi} contains three dates: 
+\begin{align*}
+\mbox{\texttt{dob}} = & \mbox{ date of \textbf{birth}}, \\
+\mbox{\texttt{doe}} = & \mbox{ date of \textbf{entry} into follow-up}, \\
+\mbox{\texttt{dox}} = & \mbox{ date of \textbf{exit}, end of follow-up}.
+\end{align*}
+These are given in format \texttt{yyyy-mm-dd} but implicitly stored as 
+\textit{number of days since 1.1.1970}. 
+
+In addition, the outcome event is represented by
+\begin{align*}
+\mbox{\texttt{chd}} = & \mbox{ indicator for \textbf{status} at exit:} \\ 
+{ } & \quad \mbox{ 1 = CHD event occurred, 0 = censored} . 
+\end{align*}
+
+
+## Data \texttt{diet}: creating a \texttt{Lexis} object
+
+First convert all dates into fractional calendar years
+using function \texttt{cal.yr()} in \texttt{Epi} 
+\small
+```{r, comment=NA,echo=T}
+data(diet)
+diet <- transform(diet, doe = cal.yr(doe), 
+                  dox = cal.yr(dox), dob = cal.yr(dob) )
+```
+\normalsize
+Convert the data frame into a \texttt{Lexis} object.  
+\small
+```{r, comment=NA,echo=T,results='hide'}
+dietL <- Lexis( entry = list(age = doe-dob),
+                exit = list(age = dox-dob),
+                exit.status = chd, data = diet )
+```
+\normalsize
+In the nexty step the \texttt{Lexis} object is splitted
+according to 3 agebands (y): $30-<50$, $50-<60$, $60-<70$
+
+
+## Splitting the \texttt{Lexis} object into agebands
+
+\small
+```{r, comment=NA,echo=T,results='hide'}
+dietA <- splitLexis(dietL, br = c(30,50,60,70), 
+                   time.scale = "age")
+dietA$ageband <- timeBand(dietA, "age", "factor")
+dietA$y_ik <- dietA$lex.dur ; dietA$d_ik <- dietA$lex.Xst
+```
+\scriptsize
+```{r, comment=NA,echo=F}
+dietA$dob <- round(dietA$dob,1)
+dietA$doe <- round(dietA$doe,1)
+dietA$dox <- round(dietA$dox,1)
+dietA$y <- round(dietA$y,1)
+dietA$age <- round(dietA$age,1)
+dietA$y_ik <- round(dietA$y_ik,1)
+```
+
+```{r, comment=NA,echo=T}
+dietA[1:8,c("id","dob","doe","dox","y","chd","energy.grp","ageband",
+            "age","y_ik","d_ik")]
+```
+\small
+Properties of the original data frame and the expanded object:
+\scriptsize
+```{r, comment=NA,echo=T,eval=F}
+> str(diet) 
+'data.frame':   337 obs. of  17 variables:
+> str(dietA)
+Classes Lexis and data.frame  729 obs. of 25 variables
+```
+\normalsize
+
+
+## Relevelling of \texttt{energy.grp} and some tabulations
+
+The \texttt{energy.grp} variable is relevelled such that
+"high energy" is taken as the reference or
+"unexposed" category and "low energy" as the "exposed" one.
+ \small
+```{r, comment=NA,echo=T,results='hide'}
+dietA$eg2 <- Relevel( dietA$energy.grp, 
+           ref = ">2750 KCals" )
+```
+\normalsize
+Tabulation of cases, person-years and rates: \small
+```{r, comment=NA,echo=T,results='hide'}
+tab.ae <- stat.table( list( ageband, eg2),
+      list( D = sum(d_ik), Y = sum(y_ik),
+            I = ratio(d_ik, y_ik, 1000) ),
+       margin = T, data = dietA )
+print(tab.ae, digits= c(sum=0, ratio=1))
+```
+\normalsize
+
+
+## Rates by ageband and energy intake
+
+:::::: {.columns}
+
+::: {.column width="50%"}
+\scriptsize
+```latex
+ ------------------------------------ 
+            -----------eg2----------- 
+ ageband       >2750  <=2750   Total  
+               KCals   KCals          
+ ------------------------------------ 
+ (-Inf,30]        NA      NA      NA  
+  ...                                     
+ (30,50]           4       2       6  
+                 622     381    1003  
+                 6.4     5.2     6.0                                      
+ (50,60]           6      12      18  
+                1128     979    2107  
+                 5.3    12.3     8.5                                      
+ (60,70]           8      14      22  
+                 794     699    1493  
+                10.1    20.0    14.7                                      
+ (70,Inf]         NA      NA      NA
+ ...                                      
+ Total            18      28      46  
+                2544    2059    4604  
+                 7.1    13.6    10.0  
+ ------------------------------------ 
+```
+\normalsize
+:::
+
+::: {.column width="50%"}
+
+\small
+Crude rate ratio\vspace{-0.3cm}
+```{r, comment=NA,echo=T}
+tab.ae[3, 6, 2]/
+  tab.ae[ 3, 6, 1]
+```
+
+\medskip
+Rate ratios by ageband:\vspace{-0.3cm} 
+```{r, comment=NA,echo=T}
+IRs <- tab.ae[3, 2:4, 2]/
+  tab.ae[3, 2:4, 1]       
+round(IRs,2)
+```
+\begin{itemize}
+\item Low intake risky?
+\item No effect in young?
+\end{itemize}
+\normalsize
+:::
+::::::
+
+## Poisson model on age and exposure
+
+Let $D_{kj}, Y_{kj}$, and $I_{kj}$ be cases, p-years \& rate
+in ageband $k$ \& exposure category $j$ 
+(1="unexposed", 2="exposed"). \newline
+Piecewise Exp-model in both exposure categories assumed:
+$$ 
+\lambda_{kj} = \mbox{ theoretical rate in cell }kj . 
+$$
+Theoretical rate ratio $\rho_k = \lambda_{k2}/\lambda_{k1}$, \newline comparing 
+exposed \textit{vs.} unexposed.
+
+(a) What are the ``true'' values of $\rho_k$?
+(b) Can we assume $\rho_k = \rho$, same rate ratio in all agebands?
+(c) What is the value of the common rate ratio $\rho$?
+
+
+## Poisson model (cont'd)
+
+Assuming common rate ratio the true rates are modelled
+$$ 
+\log \lambda_{kj} = \alpha_k + \beta_j 
+= \sum_{k=1}^K \alpha_k A_k + \sum_{j=1}^2 \beta_j X_j , 
+$$
+where $A_k$ and $X_j$ are indicator (1/0) variables for level $k$
+of ageband and level $j$ of exposure.
+In exponential form
+$$ 
+\lambda_{kj} = \exp( \alpha_k + \beta_j ) 
+= e^{\alpha_k} e^{\beta_j} . 
+$$
+Set $\beta_1 = 0$ ("unexposed" as reference)
+ $\Rightarrow$ Interpretation:
+\begin{align*}
+&\alpha_k =  \log(\lambda_{k1})
+ = \mbox{ log-rate of unexposed in ageband }k\\
+&\beta_2  =   \log(\lambda_{k2}/\lambda_{k1}) = \log(\rho)  
+ = \mbox{ log-common rate ratio}
+\end{align*}
+
+
+## Fitting the Poisson model
+
+Use function \texttt{glm()} on the expanded data frame:
+```{r, comment=NA,echo=F}
+dietA <- splitLexis(dietL, br = c(30,50,60,70), 
+                   time.scale = "age")
+dietA$ageband <- timeBand(dietA, "age", "factor")
+dietA$y_ik <- dietA$lex.dur ; dietA$d_ik <- dietA$lex.Xst
+dietA$eg2 <- Relevel( dietA$energy.grp, 
+           ref = ">2750 KCals" )
+```
+
+```{r, comment=NA,echo=T,warning=F}
+m.ea <- glm( d_ik/y_ik ~ ageband + eg2, 
+             fam = poisson, w = y_ik, data = dietA )
+```
+\small
+```{r, comment=NA,echo=T}
+round(ci.lin(m.ea, Exp=T)[ , -(3:4)], 4 )
+```
+\normalsize
+The estimated rate ratio for "low" vs. "high"
+energy consumption, adjusted for age, is thus
+1.87 [1.03 to 3.38], only slightly lower than the 
+unadjusted one 1.92 [1.06 to 3.47].
+
+
+## Concluding remarks
+
+- Modelling could continue from this to include other confounders,
+  continuous covariates, interactions, \textit{etc.} 
+ \medskip
+- Agebands may well be much narrower than in our example. With infinitely
+narrow bands Poisson regression equals the famous Cox model.
+\medskip
+- Splitting by many time scales (\textit{e.g.} age, calendar time, time since first exposure, \textit{etc.}) simultaneously and the corresponding data frame expansion is straightforward using these tools. More about this 
+in the next lecture. 
+
+

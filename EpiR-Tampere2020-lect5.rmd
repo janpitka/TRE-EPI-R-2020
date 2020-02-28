@@ -1,0 +1,579 @@
+---
+title: 
+- Statistical Methods in Cancer Epidemiology \newline using R
+author: 
+- \textbf{Karri Seppä}  \newline \newline
+- Finnish Cancer Registry  \newline  \newline
+- Lecture 5
+date: "Mar 2, 2020"
+institute: "karri.seppa@cancer.fi"
+output:
+  beamer_presentation:
+    includes:  
+         in_header: beamer_header.tex
+editor_options: 
+  chunk_output_type: console
+---
+
+## More than one time scale and SIR & SMR
+
+Contents
+
+1. Special exposure cohorts 
+\medskip
+2. Observed and expected cases, SIR \& SMR
+\medskip
+3. Lexis diagram and life lines
+\medskip
+4. Splitting follow-up time simultaneously by age and period
+\medskip
+5. Merging reference rates with the cohort data
+and performing SIR/SMR computations
+\bigskip
+
+Main R functions to be covered
+
+- \texttt{Lexis.diagram()} and other \texttt{Lexis} tools in \texttt{Epi}  
+- \texttt{merge()}
+- \texttt{sir()} and \texttt{sirspline()} in \texttt{popEpi}
+
+
+## Special cohorts of exposed subjects
+
+- Occupational cohorts, exposed to potentially \\
+hazardous agents
+\medskip
+- Cohorts of patients on chronic medication, which may have harmful long-term side-effects
+
+No internal comparison group of unexposed subjects.
+
+\medskip
+\textit{Question}:
+Do incidence or mortality rates in the \newline \textit{exposed} target cohort differ from those of a
+roughly comparable \textit{reference} population?
+
+Reference rates obtained from: 
+
+- population statistics (mortality rates)
+- disease \& hospital discharge registers (incidence)
+
+
+## Accounting for age distribution
+
+- Compare rates in a study cohort with a standard set of
+  age-specific rates from the reference population.
+  \medskip
+- Reference rates normally based on large numbers of cases, so
+  they are assumed to be "known" without error.
+  \medskip
+- Calculate \textbf{expected} number of cases, $E$, if the standard
+  age-specific rates had applied in our study cohort. 
+ \medskip
+-  Compare this with the
+  \textbf{observed} number of cases, $D$, by the \textbf{standardized incidence ratio} SIR \newline
+  (or standardized mortality ratio SMR)
+  
+$$ \text{SIR} = D/E, \qquad \text{SE}[\log(\text{SIR})] = 1/\sqrt{D} $$
+
+
+## Example: HT and breast ca.
+
+- A cohort of 974 women treated with hormone (replacement) therapy
+ were followed up. 
+- $D$ = 15 incident cases of breast cancer were
+observed. 
+- Person-years ($Y_a$) and reference rates 
+($\lambda_a^*$, per 100000 y)
+by age group ($a$) were:
+
+\small
+\begin{center}
+\begin{tabular}{lrrr}
+Age & $Y_a$   & $\lambda_a^*$ & $E_a$ \\ 
+\hline
+40--44 \rule{0em}{1em} &  975 & 113 & 1.10 \\
+45--49 & 1079 & 162 & 1.75 \\
+50--54 & 2161 & 151 & 3.26 \\ 
+55--59 & 2793 & 183 & 5.11 \\
+60--64 & 3096 & 179 & 5.54 \\
+\hline 
+$\sum$ \rule{0em}{1em} & & & 16.77
+\end{tabular}
+\end{center}
+
+## Example: HT use and breast ca. (cont'd)
+
+- "Expected" number of cases at ages 40--44:
+\[ 975 \times \frac{113}{100\,000} = 1.10 \]
+\medskip
+- Total "expected" cases is $E = 16.77$
+ \medskip 
+- The SIR is $15/16.77 = 0.89$.
+ \medskip 
+- Error factor: $\exp(1.96\times \sqrt{1/15}) = 1.66$
+ \medskip 
+- 95\% confidence interval is:
+ \[ 0.89 \mpydiv 1.66 = (0.54, 1.48) \]
+
+
+## A statistical model for SIR
+
+- The theoretical rates $\lambda_{ap}$ by age ($a$)
+and calendar period ($p$) in the cohort are assumed to be proportional to the rates $\lambda^*_{ap}$ in
+the reference population:
+\[   \lambda_{ap} = \rho\times \lambda^*_{ap}  \]
+$\rho$ = hazard ratio btw the cohort and the reference
+pop'n. 
+\medskip
+- The population rates 
+$\lambda^*_{ap}$ are assumed to be known.
+\medskip
+- Cohort data: numbers of cases $D_{ap}$ and p-years $Y_{ap}$ by $a$ge and $p$eriod are computed.
+\medskip
+- It can be shown that the likelihood of $\rho$ is of Poisson type, and the maximum likelihood estimator of $\rho$ is:
+\[
+  \widehat\rho = \frac{D}{\sum \lambda^*_{ap} Y_{ap} } =
+  \frac{\mbox{Observed}}{\mbox{Expected}}
+  = \text{SIR}
+\]
+
+
+## Example: The Welsh Nickel Workers' Study
+
+- A cohort of 679 men working in nickel smelters in South Wales first employed 1903-25 (for details see \textbf{B\&D}). 
+\medskip
+- Outcomes of interest: deaths from nasal (ICD code 160) 
+and lung cancer (ICD 162 and 163) during follow-up 1934-76. 
+\medskip
+- Outcome event indicator and basic time variables:
+\begin{align*}
+\texttt{icd}  = & \mbox{ code for cause of death, 0 if not yet dead}\\
+\texttt{date.bth}  = & \mbox{ date of birth}\\
+\texttt{date.in}  = & \mbox{ date of starting follow-up}\\
+\texttt{date.out}  = & \mbox{ date when follow-up ended}
+\end{align*}
+
+
+## Example (cont'd)
+
+- Interesting risk factors in the original data frame:
+\begin{align*}
+\mbox{\tt expos}  = & \mbox{ exposure index based on years employed in}\\
+   { } & \mbox{ high-risk areas in the smelter by 1925}\\
+   { } & \mbox{ }\rightarrow \mbox{ categorized version EXP} \\
+%  & { } & 1\ : \mbox{ 0 y}\\
+%  & { } & 2\ : \mbox{ 0.5 to 4.0 y}\\
+%  & { } & 3\ : \mbox{ 4.5 to 8.0 y}\\
+%  & { } & 4\ : \mbox{ 8.5 to 12.0 y}\\
+%  & { } & 5\ : \mbox{ $\geq$ 12.5 y}\\
+\mbox{\tt date.1st}  = & \mbox{ date when first employed }
+     \rightarrow\mbox{ AFE}
+\end{align*}
+- Risk factors to be formed from original variables:
+\begin{align*}
+\mbox{\tt age.1st}  = & \mbox{ age when first employed }
+     \rightarrow\mbox{ AFE} \\
+\mbox{\tt year.1st}  = & \mbox{ year of first employment }
+   \rightarrow \mbox{ YFE} \\
+\mbox{\tt time.1st}  = & 
+\mbox{ time since first exposure }\rightarrow\mbox{ TFE}
+\end{align*}
+
+
+## Lexis diagram \& 4 lifelines from the nickel cohort
+
+Diagram invented by \textit{Wilhelm Lexis} (1837-1914), 
+German mathematician and demographer, professor in
+Tartu 1874-76.
+
+\vspace{0.5cm}
+:::::: {.columns}
+
+::: {.column width="50%"}
+\includegraphics[height=2in]{Lexis1}
+:::
+
+::: {.column width="50%"}
+
+Individual lifelines run dia-\newline
+gonally from 
+a given\newline
+ (age, time) starting point\newline
+to an endpoint. 
+
+\bigskip
+Here the lines go from \newline
+start of exposure till \newline
+ the age and time of exit.
+ 
+ \bigskip
+ Mortality follow-up started in 1934.
+:::
+::::::
+
+
+## Nickel cohort: All lifelines in the Lexis diagram
+
+
+
+\vspace{0.5cm}
+:::::: {.columns}
+
+::: {.column width="50%"}
+\includegraphics[height=2in]{Lexis2}
+:::
+
+::: {.column width="50%"}
+
+\bigskip
+\bigskip
+Follow-up starts not until 1934 for all subjects.
+
+- dot (red) \newline = lung ca. death, 
+- circle (green)\newline  = censoring
+:::
+::::::
+
+Function \texttt{splitLexis()} splits individual follow-up times into
+rectangles defined by agebands and calendar periods. 
+
+
+
+## Splitting follow-up by age \& calendar time
+
+:::::: {.columns}
+
+::: {.column width="50%"}
+\textbf{from} the registration of:
+
+- Entry,
+- Exit,
+- Failure status
+
+ of the individuals in the cohort,
+ and the definition of the scale by:
+ 
+- \textbf{O}rigin
+- \textbf{S}cale
+- \textbf{C}utpoints
+:::
+
+::: {.column width="50%"}
+
+\textbf{to} the table of:
+
+- $D$ = events,
+  \medskip
+- $Y$ = person time,
+
+ by age and period.
+:::
+::::::
+
+
+## Expected numbers in practice
+
+- From the records of age-period split \& expanded 
+  cohort data:
+  \begin{enumerate}[ ]
+\item $\quad y_{i,ap}$ = person-time slot in a record defined by
+\item $\quad a$ = ageband of the record
+\item $\quad p$ = period of the record
+\end{enumerate}
+<!---\item sex = The sex of the record-->
+
+\bigskip
+
+- From the file containing the reference rates:
+  \begin{enumerate}[ ]
+\item $\quad \lambda_{ap}^*$ = age \& period specific rate
+\item $\quad a$ = ageband of the population rate
+\item $\quad p$ = period of the population rate
+\end{enumerate}
+<!---\item sex --- The sex of the population rate-->
+
+
+## Expected numbers in practice (cont'd)
+
+Population rates are matched up 
+to the expanded cohort data, and
+  expected numbers individually are computed as:
+$$ 
+e_{i,ap} = \lambda_{ap}^* \times y_{i,ap}  
+$$
+and these are eventually summed: $E = \sum e_{i,ap}$
+
+\bigskip
+Always two datasets are needed for SIR:
+
+1. the \textit{cohort} data with follow-up information on its
+  individual members. This must be split \& expanded to match with
+2. the \textit{reference rate} data with age \& period specific rates in the chosen reference population.
+
+
+## SMR-calculations in R using Lexis tools:
+ 
+\large  
+\color{blue} \mbox{1.} Read in the cohort data (Welsh Nickel Workers)
+\color{black}
+\normalsize
+
+  \medskip
+ and  convert the dates \texttt{dd/mm/yyyy} into ``decimal years'' 
+
+
+\small
+```{r, comment=NA,echo=T}
+library(Epi)
+nick <- read.table( "nickel.txt", header=T, as.is=T )
+for (j in 4:7) nick[ , j] <-
+   cal.yr( nick[ , j], format = "%d/%m/%Y" )
+```
+\normalsize
+
+List the records for the 4 men in a previous Lexis diagram
+\small
+```{r, comment=NA,echo=T}
+round(nick[11:14, ],2)
+```
+\normalsize
+
+
+## 2. Reference rates in E \& W read in
+\small
+```{r, comment=NA,echo=T}
+ewrates <- read.table("ewrates.txt",header=T)
+```
+
+8 first and last rows checked
+\scriptsize
+```{r, comment=NA,echo=T}
+ewrates[c(1:8, 143:150), ]
+```
+
+
+## E \& W lung ca. death rates by age and period}
+\small
+```{r, comment=NA,echo=T,results='hide'}
+tapply(ewrates$lung, list("age" = ewrates$age,
+         "year" = ewrates$year),sum)
+```
+\scriptsize
+```{r, comment=NA,echo=F}
+tapply(ewrates$lung, list("age" = ewrates$age,
+         "year" = ewrates$year),sum)
+```
+
+
+
+## 3. Creating and expanding the \texttt{Lexis} object}
+
+The data frame converted to a \texttt{Lexis} object in \newline
+two time scales: \texttt{year} (calendar time) and \texttt{age}: 
+
+\small 
+```{r, comment=NA,echo=T} 
+nickL <- Lexis( entry = list( year = date.in ),
+                 exit = list( year = date.out, 
+                              age = date.out - date.bth ),
+    exit.status = as.numeric( nick$icd %in% c(162, 163) ),
+           data = nick )
+```
+
+The \texttt{Lexis} object jointly split by age and period. Agebands and period bands are named like in the \texttt{ewrates} file --
+\texttt{"left"} means the lower cutpoint (1st year) of a band.
+\small
+```{r, comment=NA,echo=T} 
+nickL.a <- splitLexis(nickL, "age", br=seq(10,85,5) )
+nickL.ap<- splitLexis(nickL.a,"year",br=seq(1931,1986,5))
+```
+
+
+## Splitting follow up time by age and calendar year
+
+\scriptsize
+```{r, comment=NA,echo=T,eval=F} 
+plot( nickL.ap, c("year","age"), col=c("black"), xlim=c(1931,1986) )
+points( nickL.ap, c("year","age"), pch=c(NA,1)[nickL.ap$lex.Xst+1], col="red" )
+```
+\vspace{-1cm}
+```{r, comment=NA,echo=F, dev.args=list(pointsize=15)} 
+plot( nickL.ap, c("year","age"), col=c("black"), xlim=c(1931,1986) )
+points( nickL.ap, c("year","age"), pch=c(NA,1)[nickL.ap$lex.Xst+1], col="red" )
+```
+\vspace{-0.7cm}
+```{r, comment=NA,echo=T} 
+nickL.ap$year <- timeBand(nickL.ap, "year", "left")
+nickL.ap$age <- timeBand(nickL.ap, "age", "left")
+```
+
+
+## The expanded data frame viewed
+
+\small
+```{r, comment=NA,echo=T,results='hide'} 
+dim(nickL.ap)  # 10-fold expansion!
+```
+\scriptsize
+\vspace{-0.3cm} 
+```{r, comment=NA,echo=F} 
+dim(nickL.ap)
+```
+
+```{r, comment=NA,echo=T,results='hide'} 
+round( subset( nickL.ap, lex.id %in% 13:14)
+       [ , c(1:4,6,8,10,12,13)] ,2)
+```
+\scriptsize
+\vspace{-0.3cm} 
+```{r, comment=NA,echo=F} 
+round( subset( nickL.ap, lex.id %in% 13:14)
+       [ , c(1:4,6,8,10,12,13)] ,2)
+```
+
+
+## 4. Merging the cohort data with E\&W rates
+
+\small
+```{r, comment=NA,echo=T,results='hide'} 
+nickLew.ap <- merge(nickL.ap, ewrates, 
+        by = c("age", "year"))  # key columns
+round(nickLew.ap[1:20, c(1:4,6:8,10,12,13,14) ],1) 
+```
+\scriptsize
+\vspace{-0.5cm} 
+```{r, comment=NA,echo=F} 
+round(nickLew.ap[1:20, c(1:4,6:8,10,12,13,14) ],1) 
+```
+
+
+
+## 5. Calculation of observed and expected
+
+Cases & person-time slots renamed, expectations $\lambda_{ap}^* y_{i,ap}$ of becoming a case computed,
+and tables by $a$ and $p$ produced.
+
+\small
+```{r, comment=NA,echo=T} 
+nickLew.ap <- transform( nickLew.ap, 
+         d_iap = lex.Xst, y_iap = lex.dur, 
+         e_iap = lex.dur * lung/1.0E6 )
+
+Obs.lung <- with(nickLew.ap, tapply(d_iap,
+  list("age" = age, "year" = year), sum))
+
+Exp.lung <- with(nickLew.ap, tapply(e_iap,
+  list("age" = age, "year" = year), sum))
+```
+
+```{r, comment=NA,echo=T,results='hide'} 
+Obs.lung ; round(Exp.lung,3)
+```
+
+
+
+## Observed and expected numbers printed
+\vspace{-0.3cm} 
+\scriptsize
+```{r, comment=NA,echo=F} 
+Obs.lung[-c(1:2),]
+```
+\vspace{-0.4cm}
+```{r, comment=NA,echo=F} 
+round(Exp.lung,3)[-c(1:2),]
+```
+
+## 6. Calculation of SMR
+
+We can sum either over individual time slots:
+```{r, comment=NA,echo=T} 
+D <- sum(nickLew.ap$d_iap) 
+E <- sum(nickLew.ap$e_iap) 
+```
+
+or over the newly formed tables:
+```{r, comment=NA,echo=T} 
+D <- sum(Obs.lung, na.rm=T)
+E <- sum(Exp.lung, na.rm=T)
+```
+
+\medskip
+Either way, the calculation proceeds:
+
+\small
+```{r, comment=NA,echo=T} 
+SMR <- D/E; SE <- 1/sqrt(D); EF <- exp(1.96*SE)
+round(c(D, E, SMR, SMR/EF, SMR*EF), 2) 
+```
+
+
+## 6. Fit model for SMR
+
+```{r, comment=NA,echo=T} 
+m <- glm( d_iap ~ 1+offset(log(e_iap)),
+ family=poisson, data=nickLew.ap )
+round( ci.exp( m ), 2 ) 
+```
+
+
+## 6. Fit model for SMR by age group
+
+\scriptsize
+```{r, comment=NA,echo=T} 
+nickLew.ap$agegrp <- cut(nickLew.ap$age,c(20,50,65,100),right=F)
+m <- glm( d_iap ~ -1+agegrp+offset(log(e_iap)),
+ family=poisson, data=nickLew.ap )
+round( ci.exp( m ), 2 ) 
+```
+
+
+
+## 6. Fit model for SMR using \texttt{popEpi} package
+
+\scriptsize
+```{r, comment=NA,echo=T} 
+library(popEpi)
+nickLew.ap$ref.rate <- nickLew.ap$e_iap/nickLew.ap$y_iap
+m <- sir( coh.data = nickLew.ap, coh.obs = 'd_iap', coh.pyrs = 'y_iap', 
+           ref.data = nickLew.ap, ref.rate = 'ref.rate', 
+           adjust = c('age', 'year'), print = 'agegrp', conf.type = "wald")
+m
+```
+
+## 6. Fit model for SMR using \texttt{popEpi} package
+
+\scriptsize
+```{r, comment=NA,echo=T, fig.height=6,eval=F} 
+m <- sirspline( 
+  coh.data = nickLew.ap, coh.obs = 'd_iap', coh.pyrs = 'y_iap', 
+  ref.data = nickLew.ap, ref.rate = 'ref.rate', 
+  adjust = c('age', 'year'), spline = 'age', knots=5, subset = age>30)
+plot(m, conf.int = F)
+lines(m, conf.int = T, lty=2)
+```
+\vspace{-1.3cm}
+```{r, comment=NA,echo=F, fig.height=7, dev.args=list(pointsize=15)} 
+m <- sirspline( 
+  coh.data = nickLew.ap, coh.obs = 'd_iap', coh.pyrs = 'y_iap', 
+  ref.data = nickLew.ap, ref.rate = 'ref.rate', 
+  adjust = c('age', 'year'), spline = 'age', knots=5, subset = age>30)
+plot(m, ylab="SMR", conf.int = F, las=1)
+lines(m, conf.int = T, lty=2)
+```
+
+## Concluding remarks
+
+
+- If specific exposure factors exist that have variable values within
+the target cohort, the estimation of rate ratios associated with them
+ may be efficiently adjusted for age and calendar period by taking the 
+ age- and period-specific expected number as the baseline in Poisson-modelling.
+ \medskip
+- Follow-up time could be split yet by another relevant time axis, 
+like time passed since start of exposure, which may be taken as an explanatory variable when modelling the effects of exposure within a cohort.
+\medskip
+- The main challenge is to identify a sufficiently 
+comparable reference population. The ``general'' population is rarely an ideal one. 
+
+
+

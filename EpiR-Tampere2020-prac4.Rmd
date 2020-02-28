@@ -1,0 +1,493 @@
+---
+title: 'Epidemiologic data analysis using R '
+author:
+- Faculty of Social Sciences, University of Tampere
+- ' -- '
+- Janne Pitkäniemi / Karri Seppä
+date: 2.3.2020
+output:
+  word_document: default
+  pdf_document: default
+subtitle: Practicals 4
+---
+
+<!---"`r format(Sys.time(), '%d.%m.%Y')`"--->
+```{r p4_0, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, comment = NA)
+options(warn=-1)
+setwd("C:/Users/karri.seppa/Documents/TRE")
+```
+
+# Topics of practical 4
+
+
+Learning objectives of times into agebands and expanding the data frame using functions
+Lexis(), splitLexis() and timeBand() in the Epi package,
+
+*   model-based adjustment for current age and evaluation of modification in rate ratio estimation,
+*   graphical display of age-specific rates using plot() function, and estimation results from
+models using plotEst() in Epi.
+
+## 1. Diet data preliminary
+
+We shall continue analysing the diet data. Hence, we first repeat some preliminary tasks.
+(a) Load the diet data frame and show 10 first rows:
+
+```{r p4_1, eval=TRUE,echo=TRUE,warnings=FALSE}
+library(Epi)
+data( diet )
+diet[1:10, ]
+```
+
+(b) Change the reference level of the energy.grp factor so that high energy consumption is the reference category using function Relevel() in the Epi package:
+
+```{r p4_2, eval=TRUE,echo=TRUE,warnings=FALSE}
+diet$eg2 <- Relevel( diet$energy.grp, ref = ">2750 KCals" );
+```
+
+(c) Now convert the date variables corresponding to the dates of entry, exit, and birth, respectively,
+into fractional calendar years by function cal.yr() in Epi:
+
+```{r p4_3, eval=TRUE,echo=TRUE,warnings=FALSE}
+diet <- transform(diet, doe = cal.yr(doe),
+dox = cal.yr(dox), dob = cal.yr(dob) )
+```
+Check the result:
+
+```{r p4_5, eval=TRUE,echo=TRUE,warnings=FALSE}
+diet$doe[1:10] ; summary(diet$dob)
+```
+
+## 2.  Splitting age 
+
+Splitting into agebands and expanding the data frame
+
+(a) We first create a Lexis object from the original data frame with respect to age scale
+
+```{r p4_6, eval=TRUE,echo=TRUE,warnings=FALSE}
+dietL <- Lexis( entry = list(age = doe-dob),
+exit = list(age = dox-dob),
+exit.status = chd, data = diet)
+round(dietL[ 1:10, 1:10],1)
+```
+
+(b) We now expand the Lexis object, such that each individual will have 1, 2, or 3 rows depending on how many agebands exist to which he is contributing follow-up time.
+
+```{r p4_7, eval=TRUE,echo=TRUE,warnings=FALSE}
+dietA <- splitLexis(dietL, br = c(30,50,60,70),
+time.scale = "age")
+```
+
+Let's have a look at the result of this operation. Print the first few lines of the expanded
+data fame and compare with the original one:
+
+```{r p4_8, eval=TRUE,echo=TRUE,warnings=FALSE}
+round(dietA[1:10, 1:10],1)
+round(diet[1:10, 1:6],1)
+```
+
+For some ids more than 1 row were created. The sizes (dimensions) of the original and the age-split data frame, respectively, can be compared by:
+
+```{r p4_9, eval=TRUE,echo=TRUE,warnings=FALSE}
+dim(diet) ; dim(dietA)
+```
+
+(c) It is useful to convert the dieatA$age variable given by Lexis() to be a factor named ageband.
+
+```{r p4_10, eval=TRUE,echo=TRUE,warnings=FALSE}
+dietA$ageband <- timeBand(dietA, "age", "factor")
+```
+
+Apart from the intended agebands starting from 30 y and ending at 70 y, splitLexis() creates agebands for the tails of the age scale, too. The result can be checked:
+
+```{r p4_11, eval=TRUE,echo=TRUE,warnings=FALSE}
+table(dietA$ageband)
+```
+
+The 1st and the 5th ageband do not contain any observations, so they can safely be merged with the neighbouring ones, 2nd and 4th, respectively, after which the remaining three agebands may be renamed:
+
+```{r p4_12, eval=TRUE,echo=TRUE,warnings=FALSE}
+dietA$ageband <- Relevel(dietA$ageband, list(1:2, 3, 4:5))
+levels(dietA$ageband) <- c("30-<50", "50-<60", "60-<70")
+table(dietA$ageband)
+```
+
+(d) Rename also the ageband-specific event indicator dietA$lex.Xst to be dieatA$d_ik and the agebandspecific
+person-time slot dieat$lex.dur to be dieat$y_ik, analogous to the notation used in the lecture notes:
+
+```{r p4_13, eval=TRUE,echo=TRUE,warnings=FALSE}
+dietA$y_ik <- dietA$lex.dur
+dietA$d_ik <- dietA$lex.Xst
+```
+
+(e) A check of the overall no. of cases and p-years:
+
+```{r p4_14, eval=TRUE,echo=TRUE,warnings=FALSE}
+sum(dietA$y_ik); sum(dietA$d_ik)
+```
+
+These should be the same as obtained in Practical 3.
+
+## 3. Tabulate rates
+
+Tabulation of cases, person-years and rates by ageband
+
+(a) At this stage we are able to produce a table in which the cases, person-years and rates are jointly classified by ageband and energy group:
+
+```{r p4_15, eval=TRUE,echo=TRUE,warnings=FALSE}
+tab.ae <- stat.table(index = list( Ageband = ageband, "Energy group" = eg2 ),
+contents = list( D = sum(d_ik), Y = sum(y_ik),
+I = ratio(d_ik, y_ik, 1000)),
+margin = T, data = dietA )
+print(tab.ae,digits = c(sum=0, ratio=2))
+```
+
+View the internal structure of this table
+
+```{r p4_16, eval=TRUE,echo=TRUE,warnings=FALSE}
+str(tab.ae)
+```
+
+It is a 3-dimensional array, in which the 1st index refers to the contents (cases, p-years, or rates), the 2nd index to ageband, and the 3rd index to energy group.
+
+(b) We can now extract the numbers of cases, person-years, and rates into separate two-way tables indexed by ageband and energy group:
+
+```{r p4_17, eval=TRUE,echo=TRUE,warnings=FALSE}
+cases <- tab.ae[1, , ]
+years <- tab.ae[2, , ]
+rates <- tab.ae[3, , ]
+```
+
+Next, we can view these tables and their common structure:
+
+```{r p4_18, eval=TRUE,echo=TRUE,warnings=FALSE}
+cases; round(years,1); round(rates,1) ; str(rates)
+```
+
+(c) The ageband specific incidence rate ratios between the two energy groups are obtained by contrasting the second column with the first one in the rates table:
+
+```{r p4_19, eval=TRUE,echo=TRUE,warnings=FALSE}
+IRs <- rates[ , 2] / rates[ , 1] ; round(IRs, 2)
+```
+
+The last value on the right in the output is the crude rate ratio.
+
+## 4. Graphical display of rates
+(a) Plot the incidence rates in the two energy groups by ageband. From the rates table we can do this as follows (omitting the overall crude rates, i.e. value 4 in the 1st index):
+
+```{r p4_20, eval=TRUE,echo=TRUE,warnings=FALSE}
+agemids <- c( 45, 55, 65 ) # mid-ages of the agebands
+plot( rates[ -4, 1] ~ agemids, type="b", lty = 1, # the exposed
+xlim= c(40, 70), ylim = c( 0, 20 ) ,
+xlab = "Age (years)", ylab = "Rate (per 1000 y)" )
+lines( rates[ -4, 2] ~ agemids, type="b", lty=2 ) # the unexposed
+```
+
+(b) Do the same in the logarithmic scale for the rates:
+
+```{r p4_21, eval=TRUE,echo=TRUE,warnings=FALSE}
+plot( rates[ -4, 1] ~ agemids, type="b", lty = 1,
+xlim= c(40, 70), ylim = c( 4.5, 21 ) , log = "y",
+xlab = "Age (years)", ylab = "Rate (per 1000 y)" )
+lines( rates[ -4, 2] ~ agemids, type="b", lty=2 )
+```
+
+These graphs are quite rough. They could be improved in many respects by means of the multitude of graphical functions and parameters available in R.
+
+## 5. Poisson regression
+
+Adjusting for current age by Poisson regression
+(a) Fit first a model for crude estimation of the effect of energy group. Are the results similar to those obtained yesterday on the original data frame?
+
+```{r p4_22, eval=TRUE,echo=TRUE,warnings=FALSE}
+
+me <- glm( d_ik/y_ik ~ eg2, fam = poisson, w = y_ik, data = dietA )
+ci.lin(me, Exp=T)[ , -(3:4)]
+```
+
+
+(b) Fit the same model in the other way involving an offset term:
+
+```{r p4_23, eval=TRUE,echo=TRUE,warnings=FALSE}
+me1 <- glm( d_ik ~ eg2, fam = poisson, offset=log(y_ik), data = dietA )
+ci.lin(me1, Exp=T)[ , -(3:4)]
+```
+
+(c) Update the first version above adding ageband to the model formula and save the estimates
+processed by function ci.lin() for further use
+
+```{r p4_24, eval=TRUE,echo=TRUE,warnings=FALSE}
+mea <- update( me, . ~ . + ageband)
+mea.est <- ci.lin(mea, Exp=T)
+round(mea.est[ , -(3:4)], 4)
+```
+
+(d) Display the hazard ratio estimates and CIs graphically by function plotEst() in Epi:
+
+```{r p4_25, eval=TRUE,echo=TRUE,warnings=FALSE}
+plotEst( mea.est[ -1, 5:7 ] )
+```
+
+You can have the x-axis on the logarithmic scale and provide some reference lines, too:
+
+```{r p4_26, eval=TRUE,echo=TRUE,warnings=FALSE}
+plotEst( mea.est[ -1, 5:7 ], xlog=T, grid=T )
+```
+
+Again, these figures could be improved in various ways.
+
+## 6. Evaluating effect modification
+
+Model mea fitted above included only the main effects of age and exposure. This model is equivalent to the assumption that the rate ratio between the low and high energy intake is the same (or homogenous) across all the agebands. A model that allows the rate ratio of interest to be different in the three agebands is obtained by including
+an interaction term between ageband and energy intake group in the model formula.
+
+(a) We shall now fit a model including both the main effects of eg2 and ageband and their interaction:
+
+```{r p4_27, eval=TRUE,echo=TRUE,warnings=FALSE}
+meai <- glm( d_ik/y_ik ~ eg2*ageband,
+family = poisson, we = y_ik, data = dietA )
+```
+
+Instead of the concise representation eg2*ageband covering both the main effects and the interaction we could write more explicitly eg2 + ageband + eg2:agebandâ in the
+model formula. View the results:
+
+```{r p4_28, eval=TRUE,echo=TRUE,warnings=FALSE}
+est.meai <- ci.lin(meai, Exp=T)
+round(est.meai, 4)
+plotEst( est.meai[ -1, 5:7], xlog=T, grid = T)
+```
+
+How would you interpret these results?
+
+(b) The confidence limits of the individual interaction parameters appear to be very wide. A global test for the interaction effect or against the H0 for homogeneity of rate ratios is provided by the corresponding likelihood ratio statistic, which contrasts the residual deviance of the model without interaction to that of the model with interaction. As there are two free interaction parameters, the appropriate reference distribution is the chi-square
+with 2 df.
+
+```{r p4_29, eval=TRUE,echo=TRUE,warnings=FALSE}
+Dint <- anova(mea, meai) ; Dint
+pchisq( Dint[2,4], df = 2, lower.tail = F)
+```
+
+What is your conclusion based on this test:
+* H0: There is evidence for no interaction, or
+* H1: There is no evidence for interaction?
+
+## 7. Ageband as a quantitative variable
+
+So far we have treated ageband as a categorical factor
+allowing a free functional form for the age effect. We have assumed, though, that the true rate within each ageband is not varying (piecewise constant hazards model). Alternatively, ageband can be treated as a continuous variable assuming a suitable smooth function for the age effect. We have three agebands, each having a width of 10 years. The mid-point of each ageband can be taken to represent the quantitative age value in that ageband.
+
+(a) We shall first convert the ageband factor into a numeric variable using the as.numeric()
+function, and check how succesful this operation was:
+
+```{r p4_30, eval=TRUE,echo=TRUE,warnings=FALSE}
+dietA$agebnum <- as.numeric(dietA$ageband)
+table(dietA$ageband, dietA$agebnum)
+```
+
+(b) In modelling we could use these numeric scores 1, 2, and 3 as such. A natural alternative
+appears be to use the mid-year values of each ageband:
+
+```{r p4_31, eval=TRUE,echo=TRUE,warnings=FALSE}
+dietA$agebyrs <- 35 + 10*dietA$agebnum
+table(dietA$ageband, dietA$agebyrs)
+```
+
+(c) However, very often it is more advisable to use centered values for a quantitative variable. For example, instead of age values 1, 2, and 3, we could recode these into 1; 0; and 1.These values define a linear contrast between the ageband levels:
+
+```{r p4_32, eval=TRUE,echo=TRUE,warnings=FALSE}
+dietA$agebcontr <- dietA$agebnum - 2
+table(dietA$ageband, dietA$agebcontr)
+```
+
+Similarly, we could use centered coding for the mid-ages, too
+
+```{r p4_33, eval=TRUE,echo=TRUE,warnings=FALSE}
+dietA$ageby55 <- dietA$agebyrs - 55
+table(dietA$ageband, dietA$agebcontr)
+```
+
+Actually, the values 1; 0; 1 represent a centered and scaled version of the age values 45, 55, and 65; they are centered at 55 years and scaled by 10 years. 
+
+(d) We shall first fit a model with quantitative age using the uncentered mid-ages in years
+
+```{r p4_34, eval=TRUE,echo=TRUE,warnings=FALSE}
+mea10 <- glm( d_ik ~ agebyrs + eg2,
+family = poisson, offset = log(y_ik), data=dietA)
+est.mea10 <- ci.lin( mea10, Exp = T)
+round( est.mea10[ , 5:7], 4)
+```
+
+Here the intercept refers to the baseline rate at age 0 years! The slope parameter for agebyrs is equal to the change in log(RR) per an increase of 1 year of age. This is not the most comprehensible parametrization. Compare the results of this with model employing the centered version of age
+```{r p4_35, eval=TRUE,echo=TRUE,warnings=FALSE}
+mea10c <- glm( d_ik ~ ageby55 + eg2,
+family = poisson, offset = log(y_ik), data=dietA)
+est.mea10c <- ci.lin( mea10c, Exp = T)
+round( est.mea10c[ , 5:7], 4)
+```
+
+The intercept parameter has now a more meaningful interpretation (BTW: what does it
+mean here?). But the age effect seems to be quite modest, or is it?
+
+(e) We shall now fit a model with continuous age using the centered and scaled version of it, i.e. the contrast coding 1; 0; 1:
+
+```{r p4_36, eval=TRUE,echo=TRUE,warnings=FALSE}
+mea1c <- glm( d_ik ~ agebcontr + eg2,
+family = poisson, offset = log(y_ik), data=dietA)
+est.mea1c <- ci.lin( mea1c, Exp = T)
+round( est.mea1c[ , 5:7], 4)
+```
+
+Here the intercept refers to the baseline rate for ageband 50-59 y, as in the previous model. Now, however, the slope for agebcontr describes the change in the log(RR) per
+an increase of 10 years of age (instead of 1 year).
+
+
+## 8. Quadratic or 2nd order polynomial function for the effect of age?
+
+(a) The model with linear effect of age assumes that in both energy groups the logarithm of the true rate changes by the same amount for the same change in age. Maybe the pattern of the age effect is not so simple.
+We can allow the age effect to be curved or non-linear in many ways. The simplest way is to assume a parabolic form for the age-incidence curve. This can be accomplished by
+fitting a quadratic term of age in addition to the linear term. It is possible to compute the quadratic term by an ordinary variable transformation from the linear term in the data frame, like
+```{r p4_37, eval=TRUE,echo=TRUE,warnings=FALSE}
+dietA$agebyrs2 <- dietA$agebyrs^2
+```
+
+However, this is not necessary, because we can include the quadratic term directly in the model formula using the insulate operation provided by function I():
+
+```{r p4_38, eval=TRUE,echo=TRUE,warnings=FALSE}
+mea20 <- glm( d_ik ~ agebyrs + I(agebyrs^2) + eg2,
+family = poisson, offset = log(y_ik), data=dietA)
+est.mea20 <- ci.lin( mea20, Exp = T)
+round( est.mea20, 4)
+```
+
+Interpretation of parameters? Is the effect of age no more significant at all?
+
+(b) In the previous item we encountered the technical problem of collinearity, i.e. high correlation between the linear and the quadratic term of age, when expressed as years since birth. Collinearity brings about very imprecise estimates of the parameters. This can be avoided using the centered ages
+
+```{r p4_39, eval=TRUE,echo=TRUE,warnings=FALSE}
+mea20c <- glm( d_ik ~ ageby55 + I(ageby55^2) + eg2,
+family = poisson, offset = log(y_ik), data=dietA)
+est.mea20c <- ci.lin( mea20c, Exp = T)
+round( est.mea20c, 4)
+```
+
+(c) Even better it may be to use the centered and scaled version, i.e. the contrast coding
+1; 0; 1:
+
+```{r p4_40, eval=TRUE,echo=TRUE,warnings=FALSE}
+mea2c <- glm( d_ik ~ agebcontr + I(agebcontr^2) + eg2,
+family = poisson, offset = log(y_ik), data=dietA)
+est.mea2c <- ci.lin( mea2c, Exp = T)
+round( est.mea2c, 4)
+```
+
+Either way, the analysis based on centered age is consistent with common knowledge that the incidence of CHD increases with age. Another result, implied by the Wald statistic for the quadratic term, seems to be that our data does not provide sufficient evidence against the simple model according to which the log-rate depends linearly on age. (Remember, though, that our data is also well consistent with the possibility of a curved age-logincidence pattern.)
+
+(d) We can also perform a likelihood ratio test against the simple assumption that a linear term for age is sufficient. We contrast the residual deviances: linear age model vs. quadratic age model:
+
+```{r p4_41, eval=TRUE,echo=TRUE,warnings=FALSE}
+anova( mea1c, mea2c )
+```
+
+
+## 9. Age-standardised incidence rates
+
+We use popEpi package to calculate the age-standardised incidence by calendar year in the whole population of Finland. Data sibr includes the dates of diagnosis and the ages at diagnosis. 
+
+```{r, eval=TRUE,echo=TRUE,warnings=FALSE}
+library(popEpi)
+data(sibr)
+
+coh <- transform(sibr, dg_y = cal.yr(dg_date) )
+coh$agegroup <- cut(coh$dg_age, breaks=c(seq(0,85,5),Inf), right=F)
+coh$dg_y <- floor(coh$dg_y)
+```
+
+Calculate the number of cases by agegroup and calendar year
+
+```{r, eval=TRUE,echo=TRUE,warnings=FALSE}
+tab <- stat.table( index = list(agegroup,year=dg_y), 
+            contents = list(count() ), 
+            margins = F, data = coh)
+```
+
+Tabulate the mid-year population in Finland in 5-year age groups
+```{r, eval=TRUE,echo=TRUE,warnings=FALSE}
+pop <- meanpop_fi[sex==1 & year%in%1993:2012 ]
+pop$agegroup <- cut(pop$agegroup, breaks=c(seq(0,85,5),Inf), right=F)
+
+tab.pop <- stat.table( index = list(agegroup,year), 
+                   contents = list(meanpop=sum(meanpop) ), 
+                   margins = F, data = pop)
+```
+
+Combine the numbers of cases and person-years
+
+```{r, eval=TRUE,echo=TRUE,warnings=FALSE}
+#combine the numbers of cases and person-years
+tab <- merge(data.frame(as.table(tab[1,,])), 
+             data.frame(as.table(tab.pop[1,,])),by=c("agegroup","year"))
+names(tab)[3:4] <- c("obs","pyrs")
+tab$year <- as.numeric(as.character(tab$year))
+```
+
+Choose a standard population: population of Finland in 2012
+```{r, eval=TRUE,echo=TRUE,warnings=FALSE}
+own_weights <- tab[tab$year==2012,]
+own_weights <- own_weights[order(own_weights$agegroup),]
+```
+
+rate() function in popEpi package can be used to calculate the rates with confidence intervals
+```{r, eval=TRUE,echo=TRUE,warnings=FALSE}
+tab1 <- rate(tab, obs="obs", pyrs="pyrs", adjust="agegroup", 
+             weights="world_1966_18of5", print="year")
+#OR equivalently: 
+#tab1 <- rate(tab, obs="obs", pyrs="pyrs", adjust="agegroup", 
+#            weights=stdpop18$world, print="year")
+tab2 <- rate(tab, obs="obs", pyrs="pyrs", adjust="agegroup", 
+             weights=own_weights$pyrs, print="year")
+```
+
+# Age-standardised incidence rate in population aged 25+
+
+Restrict to 25+ population by setting the weights of the youngest age groups to 0.
+```{r, eval=TRUE,echo=TRUE,warnings=FALSE,fig.width=10,fig.height=7}
+own_weights$pyrs25 <- own_weights$pyrs
+own_weights$pyrs25[1:5] <- 0
+
+#25+ population of World in 1966 as another standard
+stdpop18$world25 <- stdpop18$world
+stdpop18$world25[1:5] <- 0
+```
+
+Age-standardised incidence is calculated using the weights where the weights of the youngest age groups are 0. 
+```{r, eval=TRUE,echo=TRUE,warnings=FALSE,fig.width=10,fig.height=7}
+tab1_25 <- rate(tab, obs="obs", pyrs="pyrs", adjust="agegroup", weights=stdpop18$world25, print="year")
+tab2_25 <- rate(tab, obs="obs", pyrs="pyrs", adjust="agegroup", weights=own_weights$pyrs25, print="year")
+```
+
+Non-standardised incidence has to be calculated by excluding the youngest age groups.
+```{r, eval=TRUE,echo=TRUE,warnings=FALSE,fig.width=10,fig.height=7}
+tab0_25 <- rate(tab[as.numeric(tab$agegroup)>5,], obs="obs", pyrs="pyrs", print="year")
+```
+
+Compare age-standardised rates using different standard populations
+```{r, eval=TRUE,echo=TRUE,warnings=FALSE,fig.width=10,fig.height=7}
+
+plot(as.numeric(tab1$year),tab1$rate*100000, type="l",ylim=c(0, 50),
+     ylab="Incidence per 100 000 person years")
+lines(as.numeric(tab1$year),tab1$rate.adj*100000, col="red")
+lines(as.numeric(tab2$year),tab2$rate.adj*100000, col="green")
+
+lines(as.numeric(tab0_25$year),tab0_25$rate*100000,lty=2)
+lines(as.numeric(tab1_25$year),tab1_25$rate.adj*100000, col="red",lty=2)
+lines(as.numeric(tab2_25$year),tab2_25$rate.adj*100000, col="green",lty=2)
+
+legend("topleft",c("Non-standardised incidence",
+                   "Age-standardised incidence (World 1966)",
+                   "Age-standardised incidence (Finland 2012)",
+                   "Non-standardised incidence in 25+ population",
+                   "Age-standardised incidence in 25+ population (World 1966)",
+                   "Age-standardised incidence in 25+ population (Finland 2012)"),
+       col=c("black","green","red","black","green","red"),lty=c(1,1,1,2,2,2))
+```
+
