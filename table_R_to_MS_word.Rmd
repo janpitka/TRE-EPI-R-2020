@@ -2,7 +2,8 @@
 title: "R to word tables"
 author: "Janne Pitkäniemi"
 date: "17 2 2020"
-output: word_document
+output:
+  beamer_presentation: default
 ---
 
 ```{r setup, include=FALSE}
@@ -22,17 +23,16 @@ library(knitr)
 library(data.table)
 library(janitor)
 
-bca <- data.table(read_sav("GitHub/TRE-EPI-R-2020/breastca.sav"))
+bca <- data.table(read_sav("C:/Users/janne.pitkaniemi/Documents/GitHub/TRE-EPI-R-2020/breastca.sav"))
 bca$age.gr <- cut(bca$AGE, br=c(20, 50, 65, 90), right=F)
 bca$HG <- as.factor(bca$HISTGRAD)
 
 res<-bca %>%
   tabyl(age.gr, HG) %>%
-  adorn_totals("col") %>%
-  adorn_percentages("row") %>%
-  adorn_pct_formatting(digits = 2) %>%
+  adorn_totals(c("row")) %>%
   adorn_ns() %>%
-  adorn_title()
+  adorn_percentages("row") %>%
+ 
 
 kable(res)
 ```

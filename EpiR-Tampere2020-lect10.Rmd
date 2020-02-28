@@ -1,0 +1,94 @@
+---
+title: 
+- "Statistical Methods in Cancer Epidemiology using R"
+subtitle: Survival model with long term survivors
+author: 
+- \textbf{Janne Pitkäniemi}  \newline \newline
+- Faculty of Social Sciences, University of Tampere  \newline
+- Finnish Cancer Registry  \newline  \newline
+date: "Feb,17 2020 "
+institute: "janne.pitkaniemi@cancer.fi"
+output:
+  beamer_presentation:
+    includes:  
+         in_header: beamer_header.tex
+---
+
+# Survival model with long term survivors
+
+- In standard survival analysis sufficient follow-up assumed
+- Fraction of the study subjects will never experice the event of interest
+   - fraction of patients treated will be cured 
+   - fraction of population non-susceptible (immune) to event
+   
+# Survival model with long term survivors
+
+- Let $D$ be partially latent variable indicating
+if subject is susceptible, cured $D=1$ and $D=0$ otherwise
+
+- Then the probability of an event for a subject is the product
+of probability of beeing susceptible and event at time $t$
+$$ P(D=1\mid X_i) f(t \mid D==1,X_i)$$
+
+- It is convienient to specify survivor function
+$$ S(t \mid D==1,X_i)=P(T >t \mid D==1,X_i)$$
+
+# Survival model with long term survivors
+
+- Susceptibility can be modelled with any parametric function for binary rv. f.ex logistic
+$$ P(D=1\mid X_i) = \frac{exp(\alpha+\beta x_i)}{1+exp(\alpha+\beta x_i)}$$
+
+- Time-to-event with any parametric function exponential, weibull
+as well as proportional hazards
+
+- Problems: identifiability between susceptiblity intercept and time-to-event parameters, need more censored observations
+
+- Maller and Zhou presented a testing procedure for susceptiblity fraction 0.
+
+- restrict to problems we consensus is that there is group of non-susceptibles in the population
+
+- separate modelling more informative of the problem if the groups exist
+
+# Survival model with long term survivors
+
+
+```{r,echo=T,warning=FALSE,message=FALSE,comment=NA, fig.height=4.5}
+library(smcure); library(survival) 
+data("e1684"); attach(e1684); head(e1684)
+
+#Kaplan Meier estimate of S,CDF
+fit <- survfit(Surv(FAILTIME,FAILCENS)~TRT,data = e1684)
+
+#LTS model
+pd <- smcure(Surv(FAILTIME,FAILCENS)~TRT,cureform=~TRT,
+             data=e1684,model="ph",Var = FALSE)
+res<-printsmcure(pd,Var = FALSE)
+
+
+```
+# Survival model with long term survivors
+\scriptsize
+```{r,echo=FALSE,warning=FALSE,message=FALSE,comment=NA, fig.height=4.5}
+printsmcure(pd,Var = FALSE)
+```
+\normalsize
+
+# Survival model with long term survivors
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE,comment=NA, fig.height=4.5}
+# extract suscceptible proportions
+lp1<-coef(res$logistfit)[1]
+lp2<-sum(coef(res$logistfit))
+p1<-exp(lp1)/(1+exp(lp1))
+p2<-exp(lp2)/(1+exp(lp2))
+
+plot(fit,fun="event")
+abline(h=p1,lty=2)
+abline(h=p2,lty=2)
+```
+
+- Proportion of immunes in TRT==0 is `r 1-p1`
+- Proportion of immunes in TRT==1 is `r 1-p2`
+- HR for TRT==1 vs TRT==0 for non-immunes is `r exp(res$beta)`
+
+
