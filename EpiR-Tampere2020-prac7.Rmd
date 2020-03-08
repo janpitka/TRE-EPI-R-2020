@@ -1,0 +1,309 @@
+---
+title: 'Epidemiologic data analysis using R '
+author:
+- Faculty of Social Sciences, University of Tampere
+- ' -- '
+- Janne Pitkaniemi / Karri Seppä
+date: 9.3.2020
+output:
+  word_document: default
+  pdf_document: default
+subtitle: Practicals 7
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r p7_0, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, comment = NA)
+options(warn=-1)
+setwd("C:/Users/karri.seppa/Documents/TRE")
+```
+
+
+# Topics of practical 7
+
+
+
+Learning objectives of this practical
+
+*   Estimating Kaplan-Meier (``survfit``) and lifetable (``survtab``)
+*   Estimating age-standardised survival (``survtab``)
+*   Use proportional hazards model (``coxph`` and ``glm``)
+*   Test for the assumption of proportional hazards
+
+
+# Survival analysis: Oral cancer patients
+
+
+## Description of the data
+
+
+File ``oralca2.txt`` contains data from 338
+patients having an oral squamous cell carcinoma diagnosed and treated
+in one tertiary level oncological clinic in Finland since 1985, followed-up
+for mortality until 31 December 2008.
+The dataset contains the following variables:
+
+variable    | description
+----------- | --------------------
+sex         |a factor with categories: 1 = "Female", 2 = "Male",    
+age         |in years at the date of diagnosing the cancer,  
+stage       |TNM stage of the tumour (factor): 1 = "I", ..., 4 = "IV", 5 = "unkn", 
+time        |follow-up time (in years) since diagnosis until death or censoring,
+event       |status at the end of follow-up (numeric): \newline 0 = censoring alive, 1 = death from oral cancer, 2 = death from other causes. 
+
+            
+
+## Loading the packages and the data
+
+
+Load the R packages ``Epi``, ``mstate``, and ``survival`` needed in this exercise.
+```{r p7_1, eval=TRUE,echo=TRUE,warnings=FALSE}
+library(Epi)
+library(mstate)
+library(survival)
+```
+
+Read the datafile ``oralca2.txt`` into an R data frame named orca. 
+
+Look at the head, structure and the summary of the data frame. Using function ``table()`` count the numbers of censorings as well as deaths from oral cancer and other causes, respectively, from the event variable.
+
+```{r p7_2, eval=TRUE,echo=TRUE,warnings=FALSE}
+orca <- read.csv("oralca2.txt", sep="")
+head(orca)
+```
+
+## Total mortality: Kaplan--Meier analyses
+
+
+We start our analysis of total mortality pooling the two causes of death into
+a single outcome.
+First, construct a *survival object* ``orca$suob`` from
+the event variable and the follow-up time using function ``Surv()``.
+Look at the structure and summary of ``orca$suob``.
+
+```{r p7_3, eval=TRUE,echo=TRUE,warnings=FALSE}
+# all deaths
+orca$suob <- Surv(orca$time, 1*(orca$event > 0) )
+str(orca$suob)
+summary(orca$suob)
+```
+
+
+Create a survfit object ``s.all``, which does the
+default calculations for a Kaplan--Meier
+analysis of the overall (marginal) survival curve.
+
+```{r p7_4, eval=TRUE,echo=TRUE,warnings=FALSE}
+s.all <- survfit(suob ~ 1, data=orca)
+```
+
+See the structure of this object and apply ``print()`` method on it, too. Look at the results; what do you find?
+
+```{r p7_5, eval=TRUE,echo=TRUE,warnings=FALSE}
+s.all
+str(s.all)
+```
+
+The ``summary`` method for a  ``survfit`` object would return a lengthy life table. However, the ``plot`` method with default arguments offers the Kaplan--Meier curve
+for a conventional illustration of the survival experience in the whole patient group.
+
+Alternatively, instead of graphing survival proportions,
+one can draw a curve describing their complements: the cumulative mortality proportions. This curve is drawn together with the survival curve as the
+ result of the second command line below.
+
+```{r p7_6, eval=TRUE,echo=TRUE,warnings=FALSE}
+plot(s.all)
+lines(s.all, fun = "event", mark.time=F, conf.int=F)
+```
+
+The effect of option ``mark.time=F`` is to omit
+marking the times when censorings occurred.
+
+Alternatively, use lifetable (actuarial) method in survtab function of popEpi package
+
+```{r p7_61, eval=TRUE,echo=TRUE,warnings=FALSE}
+library(popEpi)
+library(Epi)
+
+lex <- Lexis(exit = list(FUT = time),
+             exit.status = (event>0)*1,
+             data = orca[,-6], merge= T)
+
+# lifetable estimated in annual intervals from 0 to 25 years
+st <- survtab(Surv(time = FUT, event = lex.Xst) ~ 1, data = lex, 
+              surv.method = "lifetable", surv.type = "surv.obs", 
+              conf.type = "log", breaks = list(FUT = seq(0, 25, 1)))
+```
+
+Compare Kaplan-Meier and lifetable estimates
+
+```{r p7_612, eval=TRUE,echo=TRUE,warnings=FALSE}
+plot(s.all)
+lines(st, col="red")
+```
+
+Lifetable for the first 5 annual intervals:
+
+```{r p7_62, eval=TRUE,echo=TRUE,warnings=FALSE}
+summary(st, t=1:5)
+```
+
+
+## Total mortality by stage
+
+Tumour stage is an important prognostic factor in cancer survival studies.
+
+Plot separate cumulative mortality curves for the different stage groups
+marking them with different colours, the order which you may define yourself.
+Also find the median survival time for each stage.
+
+```{r p7_7, eval=TRUE,echo=TRUE,warnings=FALSE}
+s.stg  <- survfit(suob ~ stage, data= orca)
+col5 <- c("green", "blue", "black", "red", "gray")
+plot(s.stg, col= col5, fun="event", mark.time=F )
+s.stg
+```
+
+
+
+Create now two parallel plots of which the first one describes the cumulative hazards and the second one graphs the log-cumulative hazards against log-time
+for the different stages. Compare the two presentations
+with each other and with the one in the previous item.
+
+```{r p7_8, eval=TRUE,echo=TRUE,warnings=FALSE,fig.width=7,fig.height=5,dev.args=list(pointsize=15)}
+par(mfrow=c(1,2),mar=c(3,3,2,1))
+plot(s.stg, col= col5, fun="cumhaz", main="cum. hazards" )
+plot(s.stg, col= col5, fun="cloglog", main = "cloglog: log cum.haz"  )
+#a straight line with a slope of 1
+lines(exp(seq(-4,1,0.1)+3),seq(-4,1,0.1),lty=2)
+```
+
+
+If the survival times follow the exponential distribution
+in a given (sub)population,
+the corresponding cloglog-curve (plotted against time on the logarithmic scale) should be approximately a straight line with a slope of 1 (a straight line with any slope, if survival times follow the Weibull distribution).
+Could this be the case here in the different stages?
+
+Also, if the survival distributions of the different subpopulations would
+obey the *proportional hazards* model, the vertical distance between the
+cloglog-curves should be approximately constant over the time axis.
+Do these curves indicate serious deviation from the proportional hazards assumption?
+
+## Does survival differ between males and females?
+
+```{r p7_101, eval=TRUE,echo=TRUE,warnings=FALSE}
+coxph(Surv(lex.dur, lex.Xst) ~ sex, data=lex)
+```
+
+No clear effect in survival between males and females was observed based on this simple analysis. 
+
+Next, we shall examine the confounding by age.
+First categorize the continuous age variable
+into, say, three categories by function ``cut()``
+using suitable breakpoints, like 55 and 75 years, and
+cross-tabulate sex and age group:
+
+```{r p7_9, eval=TRUE,echo=TRUE,warnings=FALSE}
+orca$agegr <- cut(orca$age, br=c(0,55,75,95), right=F)
+stat.table( list( sex, agegr), list( count(), percent(agegr) ),margins=T, data = orca )
+```
+
+Male patients are clearly younger than females in these data.
+
+There is evidence on the effect of sex after adjusting for age at diagnosis.
+
+```{r p7_102, eval=TRUE,echo=TRUE,warnings=FALSE}
+lex$agegr <- cut(lex$age, br=c(0,55,75,95), right=F)
+m.adj <- coxph(Surv(lex.dur, lex.Xst) ~ sex+agegr, data=lex)
+m.adj
+```
+
+Is proportionality of hazards a reasonable assumption?
+
+```{r p7_103, eval=TRUE,echo=TRUE,warnings=FALSE}
+cox.zph(m.adj)
+```
+
+
+Now, plot Kaplan--Meier curves jointly classified by sex and age.
+
+```{r p7_10, eval=TRUE,echo=TRUE,warnings=FALSE}
+s.agrx <- survfit(suob ~ agegr + sex, data=orca)
+par(mfrow=c(1,1))
+plot(s.agrx, fun="event", mark.time=F, xlim = c(0,15),
+          col=rep(c("red", "blue"),3), lty=c(2,2, 1,1, 5,5))
+```
+
+In each ageband the mortality curve for males is on a higher level than that for females.
+
+Now, estimate the age-standardised survival using the distribution of age at diagnosis as the standard:
+
+```{r p7_104, eval=TRUE,echo=TRUE,warnings=FALSE}
+lex <- Lexis(exit = list(FUT = time),
+             exit.status = (event>0)*1,
+             data = orca[,-6], merge= T)
+w <- table(orca$agegr)
+
+st <- survtab(Surv(time = FUT, event = lex.Xst) ~ sex + adjust(agegr), 
+              data = lex, weights = c(w), 
+              surv.method = "lifetable", surv.type = "surv.obs", 
+              conf.type = "log", breaks = list(FUT = seq(0, 15, 1/12)))
+
+st.non.stand <- survtab(Surv(time = FUT, event = lex.Xst) ~ sex, 
+              data = lex, 
+              surv.method = "lifetable", surv.type = "surv.obs", 
+              conf.type = "log", breaks = list(FUT = seq(0, 15, 1/12)))
+
+plot(st, col=c("blue","red"),conf.int = F)
+lines(st.non.stand, col=c("blue","red"),lty=2,conf.int=F)
+legend("topright",c("Men, age-standardised","Women, age-standardised",
+                    "Men, non-standardised","Women, non-standardised"),
+       col=rep(c("blue","red"),2),lty=c(1,1,2,2))
+```
+
+
+Use piecewise constant hazards model instead of Cox model. Split the follow-up time into annual intervals from 0 to 5 years, and thereafter, into 5-year intervals.
+
+Could hazard be a constant from 0 to 15 years (exponentially distributed survival times)?
+
+```{r p7_105, eval=TRUE,echo=TRUE,warnings=FALSE}
+lexF <- splitLexis(lex, c(seq(0, 5, 1),seq(10, 15, 5)), time.scale = "FUT")
+#exclude follow-up>15 years
+lexF <- subset(lexF, FUT<15)
+lexF$FUT <- cut(lexF$FUT, c(seq(0, 5, 1),seq(10, 15, 5)),right=F)
+
+# piecewise constant hazards
+m.pc <- glm(lex.Xst ~ FUT + sex + agegr, offset = log(lex.dur),
+              data = lexF, family = "poisson")
+
+# constant hazard model
+m.c <- glm(lex.Xst ~ sex + agegr, offset = log(lex.dur),
+              data = lexF, family = "poisson")
+
+anova(m.c,m.pc,test="LRT")
+```
+
+Can we assume proportional hazards between age groups, i.e. no interaction between follow-up time and age at entry?
+
+```{r p7_106, eval=TRUE,echo=TRUE,warnings=FALSE}
+# main effects only
+m.pc.age <- glm(lex.Xst ~ FUT + sex + agegr, offset = log(lex.dur),
+              data = lexF, family = "poisson")
+
+#interaction included
+m.pc.age.fu <- glm(lex.Xst ~ FUT + sex + agegr + FUT:agegr, offset = log(lex.dur),
+              data = lexF, family = "poisson")
+
+anova(m.pc.age,m.pc.age.fu,test="LRT")
+```
+
+The effect of sex adjusted for age based on the piecewise constant hazards model
+
+
+```{r p7_107, eval=TRUE,echo=TRUE,warnings=FALSE}
+summary(m.pc.age)
+```
+
+

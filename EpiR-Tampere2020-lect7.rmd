@@ -1,0 +1,626 @@
+---
+title: 
+- Statistical Methods in Cancer Epidemiology \newline using R
+author: 
+- \textbf{Karri Seppä}  \newline \newline
+- Finnish Cancer Registry  \newline  \newline
+- Lecture 7
+date: "Mar 9, 2020"
+institute: "karri.seppa@cancer.fi"
+output:
+  beamer_presentation:
+    includes:  
+         in_header: beamer_header.tex
+tables: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+## Topics somewhat covered
+
+1. Survival or time to event data & censoring.
+\medskip
+2. Probability concepts for times to event: \newline 
+ survival, hazard and cumulative hazard functions
+\medskip
+3. Kaplan--Meier and Nelson--Aalen estimators.
+\medskip
+4. Regression modelling of hazards: Cox model.
+\bigskip
+
+Main R functions to be covered (\texttt{survival} package)
+
+- \texttt{Surv(), survfit(), survminer(), coxph()}
+
+
+## Survival time -- time to event
+
+Let $T$ be the \textbf{time} spent in a given \textbf{state} from its 
+beginning till a certain \textit{endpoint} or \textit{outcome} \textbf{event} or \textit{transition}
+ occurs, changing the state to another. \newline
+ (\texttt{lex.Cst - lex.dur - lex.Xst})
+
+\bigskip
+Examples of such times and outcome events:
+
+- lifetime: birth $\rightarrow$ death,
+\medskip
+- duration of marriage: wedding $\to$ divorce, 
+\medskip
+- healthy exposure time: \newline start of exposure $\rightarrow$ onset of disease,
+  \medskip
+\item clinical survival time: \newline
+ diagnosis of a disease  $\rightarrow$ death.
+
+
+
+## Set-up of classical survival analysis
+
+- \textbf{Two-state model}: only one type of event changes the initial state.
+\medskip
+- Major applications: analysis of lifetimes
+ since birth and of survival times since diagnosis of a disease 
+ until death from any cause.
+
+\setlength{\unitlength}{0.7pt}
+\begin{picture}(400,80)(-40,70)
+  \thicklines
+  \put(  0, 80){\framebox(110,50){Alive}}
+  \put(240, 80){\framebox(110,50){Dead}}
+  \put(125,105){\vector(1, 0){100}}
+  \put(170,110){\makebox(0,0)[b]{Transition}}
+\end{picture}
+
+ \textbf{Censoring}: Death and final lifetime not observed
+  for some subjects 
+  due to emigration or closing the follow-up while they are still
+ alive. 
+
+
+## Distribution concepts: survival function
+
+Cumulative distribution function (CDF)
+$F(t)$ and density function $f(t) =F'(t)$ of survival time $T$:
+\[
+F(t) =  P( T \le t) = \int_0^t f(u) du 
+\]
+= \textbf{risk} or probability that the event occurs by $t$. 
+
+\bigskip
+\textbf{Survival function} 
+\[ 
+S(t) = 1- F(t) =  P( T  >  t) = \int_t^{\infty} f(u)du, 
+\]
+= probability of avoiding the event at least up to $t$ \newline
+(the event occurs
+only after $t$).  
+
+
+
+## Distribution concepts: hazard function
+
+The \textbf{hazard rate} or \textbf{intensity} function $\lambda(t)$
+\begin{align*}
+\lambda(t) & = \underset{\Delta \rightarrow 0}{\lim} 
+ {P(t < T \le t+\Delta | T > t)}/{\Delta} \\
+   & = \underset{\Delta \rightarrow 0}{\lim} 
+      \frac{P(t < T \le t+\Delta)/\Delta }{P(T > t)}
+     = \frac{f(t)}{S(t)}  
+\end{align*}
+\begin{enumerate}[$\approx$]
+\item  the conditional probability that
+the event occurs in a short
+ interval $(t, t+\Delta]$, given that it does not
+occur before $t$, per interval length. 
+\end{enumerate}
+
+In other words, during a short interval
+ \begin{center}
+ risk of event $\approx$ hazard $\times$ interval length 
+ \end{center}
+
+
+## Distribution: cumulative hazard etc.
+
+The \textbf{cumulative hazard} (or integrated intensity):
+\[
+\Lambda(t) = \int_0^t \lambda(v)dv
+\]
+
+
+## Observed data on survival times
+
+For individuals $i = 1, \dots, n$ let 
+\vspace{-0.3cm}
+\begin{enumerate}[ ]
+\item $\qquad T_i$ = true time to event,
+\item $\qquad U_i$ = true time to censoring.
+\end{enumerate}
+Censoring is assumed \textbf{noninformative}, \textit{i.e.} independent 
+ from occurrence of events.
+ 
+We observe 
+\vspace{-0.3cm}
+\begin{enumerate}[ ]
+\item
+$y_i = \text{min}\{ T_i, U_i \}$, \textit{i.e.}
+the exit time, and
+\item
+ $ \delta_{i} = 1_{ \{ T_i < U_i  \} }$, 
+  indicator (1/0) for the event occurring first, before censoring. 
+\end{enumerate}
+
+Censoring must properly be taken into account in the statistical analysis.
+
+
+
+## Approaches for analysing survival time
+
+\begin{itemize}
+\item 
+\textbf{Parametric models} on hazard rate $h(t)$ \\
+(like Weibull, gamma, etc.) -- Likelihood:
+\begin{align*} L & = \prod_{i=1}^n \lambda(y_i)^{\delta_i} S(y_i) \\
+  & = 
+   \exp\left\{ \sum_{i=1}^n 
+     [ \delta_i \: \log \: \lambda(y_i) - \Lambda(y_i) ] 
+       \right\} 
+\end{align*}   
+\item 
+\textbf{Piecewise constant rate} model on $\lambda(t)$ \\ 
+-- estimation of $\hat\lambda(t)$ with poisson regression 
+\item 
+\textbf{Non-parametric} methods, 
+like \\ Kaplan--Meier (KM) 
+estimator of survival curve $S(t)$ and \newline Cox 
+proportional hazards model.
+\end{itemize}
+
+
+
+## R package \texttt{survival}
+
+Tools for analysis with one outcome event.
+
+- \texttt{Surv(time,event) -> sobj} \newline 
+creates a \textbf{survival object} \texttt{sobj},
+
+- \texttt{survfit(sobj) -> sfo} \newline 
+non-parametric survival curve estimates, like KM 
+(also estimated baseline in a Cox model), 
+
+- \texttt{plot(sfo)} \newline 
+survival curves and related graphs, 
+
+- \texttt{coxph(sobj \~{} x1 + x2 +...)} \newline  
+fits the Cox model
+with covariates \texttt{x1} and \texttt{x2}. 
+
+- \texttt{survreg()} -- parametric survival models.
+
+
+## KM esimate for survival function $S(t)$
+
+\begin{itemize}
+\item  Order event times (possibly separately in groups)
+\item $\widehat{S(t_j)}=\widehat{S(t_{j-1})} \left(1-\frac{d_j}{n_j}\right) $, where $t_0=0$ and
+${\widehat{S(0)}=1}$
+\item ${\widehat{S(t)}}$ is constant between event -- step function 
+\item Each observations contributes as long as at risk for the event and confidence intervals can be introduced using classical inference framework.
+\end{itemize}  
+
+
+
+## Age-standardised esimate for survival function $S(t)$
+
+\begin{itemize}
+\item  Weighted average of age-specific survival estimates
+\begin{enumerate}[]
+\item $S(t)=\sum_{a=1}^K w_aS_a(t)\quad$ where $\sum_{a=1}^K w_a =1$
+\end{enumerate}
+\item weight $w_a$ is a standard for the proportion of patients in age group $a$ \underline{at the beginning of follow-up} 
+\begin{itemize}
+\item e.g. the international cancer survival standards (ICSS; Corazziari et al. 2004) 
+\end{itemize}
+\item Can be estimated using \texttt{survtab()} function in \texttt{popEpi} package
+\end{itemize}  
+
+
+## Veterans' Administration Lung Cancer study
+
+In this trial, males with advanced inoperable lung cancer were randomized to a standard therapy and a test chemotherapy. The primary endpoint for the therapy comparison was time to death in days, represented by the variable Time.
+
+Variables 
+
+\begin{itemize}
+\item trt:	 1=standard 2=test
+\item celltype:1=squamous, 2=smallcell, 3=adeno, 4=large
+\item time:	 survival time (days)
+\item status:	 status 1= death, 0=censored 
+\item karno:	 Karnofsky performance score (100=good)
+\item diagtime:months from diagnosis to randomisation
+\item age:	 in years
+\item prior:	 prior therapy 0=no, 1=yes
+\end{itemize}
+
+\scriptsize Reference: D Kalbfleisch and RL Prentice (1980), The Statistical Analysis of Failure Time Data. Wiley, New York.
+
+
+
+## Veteran data
+
+\scriptsize
+```{r, comment=NA,echo=T}
+library(survival)
+head(veteran)
+head(veteran[veteran$trt==2,])
+```
+
+
+
+## Estimate for hazard function $\lambda(t)$ in R \newline -- splitting time scale
+
+\scriptsize 
+```{r, comment=NA,echo=T, warning=F, message=FALSE}
+#===============================
+# get packages needed for the analysis
+#===============================
+library(dplyr)
+library(survival)
+library(Epi)
+#===============================
+# define stating time at 0 and create subject id
+#===============================
+veteran$start<-0
+veteran$id<-1:nrow(veteran)
+#===============================
+# Split follow-up time into interval
+#===============================
+nvet<-survSplit(veteran,
+                cut=c(100,200,300,400),
+                event="status",
+                start="start",
+                end="time",episode="period")
+```
+
+
+## Estimate for hazard function $\lambda(t)$ in R \newline -- splitting time scale
+
+\scriptsize 
+```{r, comment=NA,echo=T, warning=F, message=FALSE}
+#===============================
+# dplyr -package,rather than stat.table() -function 
+#===============================
+gsvet<-group_by(nvet,period)
+speriod<-summarize(gsvet, 
+               n=length(trt),
+               events=sum(status),
+               pyrs=round(sum(time-start)),
+               rate1000=(events/pyrs)*1000,
+               lograte=log(events/pyrs))
+speriod<-data.frame(speriod)
+speriod[,1:6]
+```
+
+
+## Estimate for hazard function $\lambda(t)$ in R \newline -- Poisson regression
+
+\scriptsize 
+```{r, comment=NA,echo=T, warning=F, message=FALSE}
+#===============================
+# Poisson model for incidence in each period of time
+#===============================
+m<-glm(events ~ -1+factor(period),
+       family=poisson,offset=log(pyrs),data=speriod)
+round(ci.lin(m,Exp=TRUE)[,-(3:4)],6)
+#1-year cumulative hazard 
+Lambda_1yr<- sum(exp(m$coefficient[1:4])*c(100,100,100,65))
+#1-year survival in percentages
+exp(-Lambda_1yr)*100
+```
+
+
+## Estimation of the survival function $S(t)$
+
+
+\scriptsize 
+```{r, comment=NA,echo=T, warning=F, message=FALSE}
+m <- survfit(formula = Surv(time, status) ~ trt, data = veteran)
+m2 <- summary(m)
+m2 <- data.frame(lapply(c(10,2:6) , function(x) m2[x]))
+m2[m2$time<10,]
+```
+
+:::::: {.columns}
+
+::: {.column width="50%"}
+- trt=1
+
+\begin{enumerate}[ ]
+\item $S(0)=1$\\
+\item $S(3)=S(0)\times(1-1/69)=0.986$\\
+\item $S(4)=S(3)\times(1-1/68)=0.971$
+    
+\end{enumerate}
+
+:::
+
+::: {.column width="50%"}
+- trt=2
+
+\begin{enumerate}[ ]
+\item $S(0)=1$\\
+\item $S(1)=S(0)\times(1-2/68)=0.971$\\
+\item $S(2)=S(1)\times(1-1/66)=0.956$
+
+\end{enumerate}
+:::
+::::::
+
+## Plot of Survival curve for Veteran data
+
+\scriptsize
+```{r, comment=NA,echo=T, warning=F, message=FALSE, fig.height=6.5}
+library(survminer)
+ggsurvplot(m, pval = TRUE, conf.int = TRUE, risk.table = TRUE,
+           risk.table.y.text.col = TRUE)
+```
+
+
+## Estimate cumulative hazard function -- $\hat \Lambda(t)$
+
+\begin{itemize}
+\item KM for survival function $P(T>t)$ is often presented \newline
+$P(T>t) = S(t)=\exp[-\Lambda(t)]=\exp\left[ -\int_0^t \lambda(u) du \right]$
+\item Cumulative risk from $0$ to $t$: $P(T \leq t) = 1-S(t)=1-\exp[- \Lambda(t)]$
+\item If low incidence rate $\lambda$ or short risk period $\Delta$: \newline  $1-\exp[- \Lambda(t)] \approx \Lambda(t) = \lambda \Delta $ \quad i.e. rate $\times$ period at risk
+\item Cumulative hazard can be estimated from KM, but Nelson-Aalen should be preferred
+\end{itemize}
+
+
+## Estimate cumulative hazard function -- $\hat \Lambda(t)$
+
+\scriptsize
+```{r, comment=NA,echo=T, warning=F, message=FALSE, fig.height=3.5, dev.args=list(pointsize=23)}
+m <- survfit(formula = Surv(time, status) ~ trt, data = veteran)
+par(mfrow=c(1,3), mar=c(3,4,0,0.5))
+plot(m, fun="F",ylab="1-S", col=c("blue","red"))
+plot(m, fun="cumhaz", ylab="Cumulative hazard", col=c("blue","red"))
+plot(m, fun="cloglog", ylab="Logarithm of cumulative hazard", col=c("blue","red"))
+```
+
+\vspace{-0.2cm}
+\footnotesize
+
+- KM curve of survival S(t) is the most popular.
+- Informative are also graphs for estimates of
+    - $F(t) = 1 - S(t)$ , i.e. CDF
+    - $\Lambda(t) = -\log[1-F(t)]$, cumulative hazard,
+    - $\log[\Lambda(t)]$, cloglog transform of CDF.
+
+
+## Regression models for time-to-event data
+
+Consider only one outcome & no competing events
+\begin{itemize} 
+\item
+Subject $i$ $(i=1, \dots, n)$ has an own vector $x_i$ that contains
+values $(x_{i1}, \dots, x_{ip})$ of a set of $p$ 
+continuous and/or binary covariate terms.
+\medskip
+\item
+In the spirit of generalized linear models we let 
+$\beta = (\beta_1, \dots, \beta_p)$ be regression coefficients
+and build  a \textbf{linear predictor} 
+$$ 
+\eta_i = x_i^{\small\text{T}} \beta =  \beta_1 x_{i1} + \dots + \beta_p x_{ip} 
+$$ 
+\item
+Specification of outcome variable? \newline
+Distribution (family)? Expectation? Link?  
+\end{itemize}
+
+
+## Regression models (cont'd)
+
+Survival regression models can be defined \textit{e.g.} for 
+
+(a) survival times directly 
+$$ \log(T_i) = \eta_i + \epsilon_i, \quad\text{s.t. } 
+\epsilon_i \sim F_0(t; \alpha)$$ 
+where $F_0(t; \alpha)$ is some baseline model, 
+\medskip
+(b) hazards, multiplicatively: $$ 
+\lambda_i(t) = \lambda_0(t; \alpha) r(\eta_i), \quad\text{where}$$
+$\lambda_0(t; \alpha)$ = baseline hazard and \newline
+$r(\eta_i)$ = relative rate function, typically $\exp(\eta_i)$
+\medskip
+(c) hazards, additively: 
+$$ \lambda_i(t) = \lambda_0(t; \alpha) + \eta_i. $$
+
+
+
+## Relative hazards model or Cox model
+
+In model (b), the baseline hazard $\lambda_0(t,\alpha)$ may be given a parametric form (\textit{e.g.} Weibull) or
+a piecewise constant rate (exponential) structure.
+
+\bigskip
+Often a parameter-free form $\lambda_0(t)$ is assumed. Then
+\[
+  \lambda_i(t) = \lambda_0(t) \exp(\eta_1),
+\]
+specifies the \textbf{Cox model} or the \textbf{semiparametric proportional hazards model}.
+
+\bigskip
+$\eta_i = \beta_1 x_{i1} + \dots + \beta_p x_{ip}$ not depending on time.  
+
+\bigskip
+Generalizations: \textbf{time-dependent} \newline covariates $x_{ij}(t)$, and/or 
+effects $\beta_j(t)$.
+
+
+
+## PH model: interpretation of parameters
+
+Present the model explicitly in terms of $x$'s and $\beta$'s.
+\[
+\lambda_i(t) = \lambda_0(t)  \exp({\beta_1 x_{i1} + \dots +
+\beta_p x_{ip}})
+\]
+Consider two individuals, $i$ and $i'$, having the same values of all
+other covariates except the $j^{\text{th}}$ one.
+
+\bigskip
+The ratio of hazards is constant:
+$$  \frac{\lambda_i(t)}{\lambda_{i'}(t)} = \frac{\exp( \eta_{i}) }{\exp(\eta_{i'})}
+= \exp \{ \beta_j(x_{ij}-x_{i'j}) \} . $$
+Thus $e^{\beta_j} = \text{HR}_j$ = \textbf{hazard ratio} or relative rate
+ associated with
+ a unit change in covariate $X_j$.
+
+
+## Ex. Veteran data and treatment effect
+
+Fitting Cox models with trt effect.
+\scriptsize
+```{r, comment=NA,echo=T, warning=F, message=FALSE, fig.height=4.5}
+m <- coxph(formula = Surv(time, status) ~ trt, data = veteran)
+summary(m)
+```
+
+\normalsize
+HR for treatment 2 vs. 1 is 1.02 (95% CI 0.71;1.45) \newline
+Not statistically significant (p=0.92)
+
+
+
+## Proportionalilty of hazards?
+\begin{itemize}
+\item
+Consider two groups $g$ and $h$ defined by one categorical covariate, and let $\rho > 0$. 
+\medskip
+If $\lambda_g(t) = \rho \lambda_h(t)$  then 
+$\Lambda_g (t) = \rho \Lambda_h(t)$ and
+$$ \log\: \Lambda_g  (t)  = \log (\rho) + \log\: \Lambda_h (t), $$
+thus log-cumulative hazards should be parallel!
+\end{itemize}
+\begin{enumerate}[$\Rightarrow$]
+\item
+\textit{Plot the estimated log-cumulative hazards and see
+whether they are sufficiently parallel}.
+\end{enumerate}
+\begin{itemize}
+\item
+\texttt{plot(coxobj, ..., fun = 'cloglog')}
+\medskip
+\item
+Testing the proportionality assumptions: \texttt{cox.zph(coxobj)}.
+\end{itemize}
+
+
+
+
+## Ex. Veteran data - test PH
+
+\begin{itemize}
+\item With $>1$ covariates,  \texttt{cox.zph()} tests the assumption by checking, whether the corresponding parameters (\& hazard ratios)
+may vary in time.
+\item Suppose that I want to include information on patient baseline general disease status -- Karnofsky performance score (0=dead, 100=good)
+\item Dichotomize the Karnofsky score 0 if Score $[$0,50 $]$ and 1 if $($50,100$]$
+\end{itemize}
+
+
+
+
+## Ex. Veteran data - test PH
+
+\scriptsize 
+```{r, comment=NA,echo=T, warning=F, message=FALSE, fig.height=4.5}
+veteran$karnod<-as.numeric(veteran$karno>50)
+m <- coxph(formula = Surv(time, status) ~ trt+ karnod, 
+           data = veteran)
+m
+#testing proportionality
+cox.zph(m)
+```
+
+Test for proportionality are significant (p<0.05) -- assumptions of proportionalty of hazards is rejected for both tretment and score variable
+-- stratify accoding to the score 
+
+
+
+## Ex. Veteran data - test PH
+
+\scriptsize 
+```{r, comment=NA,echo=T, warning=F, message=FALSE, fig.height=4.5}
+m <- coxph(formula = Surv(time, status) ~ trt+strata(karnod), 
+           data = veteran)
+m
+cox.zph(m)
+```
+
+Test for proportionality is not significant (p>0.05) \newline
+HR for treatment effect is 1.01 95% CI (0.71 ;1.45)
+
+
+## Homogeneity of HRs
+
+Question: Are the HRs for different celltypes similar or not?
+
+Testing hypothesis of regression coefficients equal (Not the hypothesis that they are zero)
+
+More formally, the model: 
+\[
+\lambda_i(t) = \lambda_0(t)  \exp({\beta_1 x_{i1} + \beta_2 x_{i2} + \beta_3 x_{i3} }),
+\]
+where $x_{i1}=1$ if celltype smallcell 0 otherwise \newline
+and $x_{i2}=1$ if celltype adeno 0 otherwise \newline
+and $x_{i3}=1$ if celltype large 0 otherwise \newline
+and squamous celltype has been chosen as the reference category
+($x_{i1}=0$ and $x_{i2}=0$ and $x_{i3}=0$)
+
+
+
+
+
+## Homogeneity of HRs
+
+\scriptsize 
+```{r, comment=NA,echo=T, warning=F, message=FALSE, fig.height=4.5}
+m<-coxph(formula = Surv(time, status) ~ celltype, 
+         data = veteran)
+summary(m)
+```
+
+## Homogeneity of HRs
+
+Test for homogeneity across HRs of three cell types: small cell, adeno and large ($\beta_1=\beta_2=\beta_3$?)
+
+\scriptsize 
+```{r, comment=NA,echo=T, warning=F, message=FALSE, fig.height=4.5}
+veteran$celltype2 <- Relevel(veteran$celltype,           
+                             list(1,"small_or_adeno_or_large"=2:4))
+m2<-coxph(formula = Surv(time, status) ~ celltype2, 
+         data = veteran)
+anova(m,m2)
+```
+
+HR’s are not the same between celltypes
+
+## Homogeneity of HRs
+
+Test for homogeneity between HRs of smallcell and adeno cancer ($\beta_2=\beta_3?$).
+
+\scriptsize 
+```{r, comment=NA,echo=T, warning=F, message=FALSE, fig.height=4.5}
+veteran$celltype3 <- Relevel(veteran$celltype,           
+                             list(1,"small_or_adeno"=2:3,4))
+m3<-coxph(formula = Surv(time, status) ~ celltype3, 
+         data = veteran)
+anova(m,m3)
+```
+
+The HRs do not differ significantly between small cell and adeno cancers (p=0.56).  
