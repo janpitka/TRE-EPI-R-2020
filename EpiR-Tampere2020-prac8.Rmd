@@ -1,0 +1,186 @@
+---
+title: 'Epidemiologic data analysis using R '
+author:
+- Faculty of Social Sciences, University of Tampere
+- ' -- '
+- Janne Pitkaniemi / Karri Seppä
+date: 23.3.2020
+output:
+  word_document: default
+  pdf_document: default
+subtitle: Practicals 8
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r p7_0, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, comment = NA)
+options(warn=-1)
+setwd("C:/Users/karri.seppa/Documents/TRE")
+```
+
+
+# Topics of practical 8
+
+
+
+Learning objectives of this practical
+
+*   Estimating cumulative incidence function by using Aalen-Johansen estimator
+*   Testing differences in cumulative incidence by using competing risks regression model (Fine and Gray 1999) for subdistribution hazards
+
+
+# Survival analysis: Oral cancer patients
+
+
+## Description of the data
+
+
+File ``oralca2.txt`` contains data from 338
+patients having an oral squamous cell carcinoma diagnosed and treated
+in one tertiary level oncological clinic in Finland since 1985, followed-up
+for mortality until 31 December 2008.
+The dataset contains the following variables:
+
+variable    | description
+----------- | --------------------
+sex         |a factor with categories: 1 = "Female", 2 = "Male",    
+age         |in years at the date of diagnosing the cancer,  
+stage       |TNM stage of the tumour (factor): 1 = "I", ..., 4 = "IV", 5 = "unkn", 
+time        |follow-up time (in years) since diagnosis until death or censoring,
+event       |status at the end of follow-up (numeric): \newline 0 = censoring alive, 1 = death from oral cancer, 2 = death from other causes. 
+
+            
+
+## Loading the packages and the data
+
+
+Load the R packages ``Epi``, ``mstate``, and ``survival`` needed in this exercise.
+```{r p7_1, eval=TRUE,echo=TRUE,warnings=FALSE}
+library(Epi)
+library(mstate)
+library(survival)
+```
+
+Read the datafile ``oralca2.txt`` into an R data frame named orca. 
+
+Look at the head, structure and the summary of the data frame. Using function ``table()`` count the numbers of censorings as well as deaths from oral cancer and other causes, respectively, from the event variable.
+
+```{r p7_2, eval=TRUE,echo=TRUE,warnings=FALSE}
+orca <- read.csv("C:/Users/karri.seppa/Documents/TRE/oralca2.txt", sep="")
+head(orca)
+```
+
+
+## Lexis object with multi-state set-up
+
+Before entering to analyses of cause-specific mortality it might be instructive to apply some Lexis tools
+to illustrate the competing-risks set-up.
+
+Form a ``Lexis`` object from the data frame and
+print a summary of it. We shall name the main (and only) time axis in this object as ``stime``.
+```{r p7_11, eval=TRUE,echo=TRUE,warnings=FALSE}
+ orca.lex <- Lexis(exit = list(stime = time),                  
+                   exit.status = factor(event,
+    labels = c("Alive", "Oral ca. death", "Other death")),
+                   data = orca)
+ summary(orca.lex)
+```
+
+
+Draw a box diagram of the two-state set-up of competing transitions. Run first the following command line
+
+```{r p7_12, eval=TRUE,echo=TRUE,warnings=FALSE}
+boxes( orca.lex,boxpos=T )
+```
+
+Now, move the cursor to the point in the graphics window, at which you wish to put the box for "Alive", and click. Next, move the cursor to the point at which you wish to have the  box for "Oral ca. death", and click. Finally, do the same with the box for "Other death".
+If you are not happy with the outcome, run the command line again and repeat the necessary mouse moves and clicks.
+
+## Event-specific cumulative mortality curves
+
+We move on to analysing cumulative mortalities for the
+ two causes of death separately, first overall and then
+ by prognostic factors.
+
+ Use function ``Cuminc()`` in package ``mstate``
+ and view the structure of the thus created object.
+
+```{r p7_13, eval=TRUE,echo=TRUE,warnings=FALSE}
+cif1 <- Cuminc( time = "time", status= "event", data = orca)
+str(cif1)
+```
+
+
+Function ``Cuminc()`` thus creates an ordinary data frame with quite self-explanatory column names. Unfortunately, no handy ``plot`` method is provided in the package, but in Epi package there is funciont plotCIF
+
+
+
+Draw two parallel plots describing
+the overall cumulative incidence curves for both causes of death
+
+```{r p7_14, eval=TRUE,echo=TRUE,warnings=FALSE}
+par(mfrow=c(1,2))
+cif1 <- survfit( Surv( time, event, type="mstate") ~ 1,
+                 data = orca.lex)
+plotCIF(cif1,event=1)
+plotCIF(cif1,event=2)
+```
+
+
+Compute the estimated cumulative incidences by stage for both causes of death.
+Now you have to add argument ``stage`` when calling
+``Cuminc()``.
+See the structure of the resulting object, in which you should
+observe the first column containing the grouping variable.
+Plot the pertinent curves in two parallel graphs.
+Cut the $y$-axis for a more efficient graphical presentation
+
+```{r p7_15, eval=TRUE,echo=TRUE,warnings=FALSE}
+par(mfrow=c(1,2))
+cif2 <- survfit( Surv( time, event, type="mstate") ~ stage,
+                 data = orca.lex)
+ plotCIF(cif2, 1, main = "Cancer death by stage",
+    col=rainbow(5), ylim = c(0, 0.7) )
+ plotCIF(cif2, 2, main= "Other deaths by stage",
+    col=rainbow(5), ylim = c(0, 0.7) )
+```
+
+Compare the two plots. What would you conclude about the
+effect of stage on the two causes of death?
+
+
+## Competing risks regression
+
+Test if the cumulative incidence differs between stages I and III
+by using the logrank test based on subdistribution hazards.
+
+```{r p7_16, eval=TRUE,echo=TRUE,warnings=FALSE}
+library(cmprsk)
+orca2 <- subset(orca, stage%in%c("I","III"))
+orca2$stage <- factor(orca2$stage)
+with(orca2, cuminc(time,event,group=stage)$Tests)
+```
+
+Test the difference based on the Fine-Gray model where age at diagnosis is or
+is not included. 
+
+Function crr fits the 'proportional subdistribution hazards' regression model. It
+It does not support the use of model formulas. Therefore, we fit a Cox model and use the corresponding design matrix in crr function. 
+
+```{r p7_17, eval=TRUE,echo=TRUE,warnings=FALSE}
+orca2$agegr <- cut(orca2$age,c(0,55,75,Inf),right=F)
+
+# fit Cox model in order to 
+fit.cox <- coxph(Surv(time,event%in%c(1))~stage,data=orca2)
+fit.finegray <- with(orca2,crr(ftime=time, fstatus=event, cov1=model.matrix(fit.cox),failcode=1,cencode=0))
+summary(fit.finegray)
+
+fit.cox <- coxph(Surv(time,event%in%c(1))~agegr+stage,data=orca2)
+fit.finegray <- with(orca2,crr(ftime=time, fstatus=event, cov1=model.matrix(fit.cox),failcode=1,cencode=0))
+summary(fit.finegray)
+```
+
+
+After adjusting subdistribution hazard for age the difference in cumulative cancer mortality between stages I and III is significant.

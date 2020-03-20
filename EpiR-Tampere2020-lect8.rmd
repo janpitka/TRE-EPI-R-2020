@@ -1,0 +1,555 @@
+---
+title:
+- Statistical Methods in Cancer Epidemiology \newline using R
+author: 
+- \textbf{Karri Seppä}  \newline \newline
+- Finnish Cancer Registry  \newline  \newline
+- Lecture 8
+date: "Mar 23, 2020"
+institute: "karri.seppa@cancer.fi"
+output:
+  beamer_presentation:
+    includes:  
+         in_header: beamer_header.tex
+tables: true
+editor_options: 
+  chunk_output_type: console
+---
+
+## Timetable today
+
+- Lecture 8 (competing risks): 
+    - 9.15-10.00
+
+- Practical 7 (survival without competing risks): 
+    - 10.15 ->
+
+- Lecture 9 (population-based cancer survival): 
+    - 13.15-14.00
+
+- Practical 8 (competing risks): 
+    - 14.15 ->
+ 
+
+
+## Points to be covered
+
+1. Competing risks: event-specific cumulative incidences & hazards.
+ \medskip
+2. Kaplan--Meier and Aalen--Johansen estimators.
+ \medskip
+3. Regression modelling of competing hazards:
+ \medskip
+4. Packages \texttt{survival, mstate, cmprisk}.
+\medskip
+5. Functions \texttt{Surv(), survfit(), plot.survfit(), coxph(), Cuminc()}.
+
+
+
+
+## Ex. Survival of 338 oral cancer patients
+
+
+Important variables: 
+
+\begin{itemize}
+\item \texttt{time} = duration of patientship from \\ 
+ diagnosis (\textbf{entry}) till death or censoring, 
+\medskip
+\item
+\texttt{event} = indicator for the outcome and its \\
+ observation at the end of follow-up (\textbf{exit}): \\
+  0 = censoring,  \\
+  1 = death from oral cancer, \\
+  2 = death from some other cause.
+\end{itemize}
+
+
+\medskip
+Special features:
+\begin{itemize}
+\item
+   Several possible endpoints, \textit{i.e.} alternative causes of death, of which
+   only one is realized.
+   \medskip
+\item
+   Censoring -- incomplete observation of the survival time.   
+\end{itemize}
+
+
+
+## Ex. Oral cancer data
+
+```{r, comment=NA,echo=T}
+orca <- read.table(file="oralca2.txt")
+head(orca)
+```
+
+
+
+## Ex. Oral cancer data
+
+Analysis of overall mortality
+
+\scriptsize
+```{r, comment=NA,echo=T}
+library(survival)
+orca$suob <- Surv(orca$time, 1*(orca$event > 0) )
+km1 <- survfit( suob ~ 1, data = orca)
+km1              #  brief  summary
+summary(km1)     #  detailed KM-estimate
+
+
+```
+
+
+## Oral cancer: Kaplan-Meier estimates
+
+```{r, comment=NA,echo=T, warning=F, message=FALSE, fig.height=4, dev.args=list(pointsize=23)}
+par(mfrow=c(1,3),mar=c(3,2.5,2,0.5),las=1)
+plot(km1,main="Survival")
+plot(km1,fun="F",main="CDF=1-Survival")
+plot(km1,fun="cumhaz",main="Cumulative hazard")
+```
+
+
+
+## Competing risks model: causes of death
+   
+\begin{itemize}
+\item
+Often the interest is focused on the risk or hazard of dying 
+from one specific cause.
+\medskip
+\item
+That cause may eventually not be realized, because
+a \textbf{competing cause} of death hits first.
+
+\bigskip
+
+\begin{center}
+\setlength{\unitlength}{0.65pt}
+\begin{picture}(400,190)
+  \thicklines
+  \put(  0, 80){\framebox(120,50){Alive}}
+  \put(230,130){\framebox(180,50){Dead from cancer}}
+  \put(230, 30){\framebox(180,50){Dead, other causes}}
+  \put(135,125){\vector(3, 1){90}}
+  \put(135, 85){\vector(3,-1){90}}
+  \put(165,157){\makebox(0,0)[b]{$\lambda_1(t)$}}
+  \put(165, 53){\makebox(0,0)[t]{$\lambda_2(t)$}}
+\end{picture}
+\end{center}
+\item
+ Generalizes to several competing causes.
+ \end{itemize}
+
+
+
+## Competing events & competing risks
+
+In many epidemiological and clinical contexts there are
+competing events that may 
+occur before the target event and remove the person from 
+ the population at risk for the event, \textit{e.g.}
+
+\begin{itemize}
+\item \textit{target event}: occurrence of endometrial cancer,
+ \textit{competing events}: hysterectomy or death.
+\medskip
+\item \textit{target event}: relapse of a disease \\
+(ending the state of remission), \\
+ \textit{competing event}: death while still in remission.
+ 
+\item \textit{target event}: divorce, \\ 
+ \textit{competing event}: death of either spouse.
+ 
+\end{itemize}
+
+
+
+## Event-specific quantities
+
+\textbf{Cumulative incidence function} (CIF) or \newline
+ \textbf{subdistribution function} for event $c$:
+\[  F_c(t) = P(T \leq t \text{ and } C = c ), \quad c = 1,2,  \]
+subdensity function $f_c(t) = dF_c(t)/dt$ 
+
+\medskip
+From these one can recover
+\begin{itemize}
+\item
+$F(t) = \sum_{c} F_c(t)$, CDF of event-free survival time $T$, \textit{i.e.} 
+cumulative risk of any event by $t$.
+\medskip
+\item
+$S(t) = 1 - F(t)$, \textbf{event-free survival function}, \textit{i.e.} probability of avoiding all events by $t$
+\end{itemize}
+
+
+
+## Event-specific quantities (cont'd)
+
+
+\textbf{Event-} or \textbf{cause-specific hazard function}
+\begin{align*}
+ \lambda_c(t) & =  \underset{\Delta\to 0}{\lim} 
+    \frac{P(t < T \le t+\Delta \text{ and } C = c \mid T > t)}{\Delta}  \\
+        & =  \frac{f_c(t)}{1-F(t)}
+\end{align*}
+\begin{enumerate}[$\approx$]
+\item Risk of \textit{event} $c$ 
+in a short interval $(t, t+ \Delta]$,  given 
+\textit{avoidance of all events} up to $t$, 
+per interval length.
+\end{enumerate}
+
+\textbf{Event-} or \textbf{cause-specific cumulative hazard} 
+ $$ \Lambda_c(t) = \int_0^t \lambda_c(v)dv $$ 
+
+
+
+## Event-specific quantities (cont'd)
+
+\begin{itemize}
+\item CIF = risk of event $c$ over risk period $[0,t]$ in the presence of competing risks, also obtained 
+$$ F_c(t) = \int_0^t \lambda_c(v) S(v) dv, \quad c = 1,2, $$
+\item
+Depends on the hazard of the competing event, too, 
+via 
+\begin{align*} 
+S(t) & = \exp\left\{ - \int_0^t [\lambda_1(v) + \lambda_2(v)]dv 
+ \right\} \\
+ & = \exp\left\{ - \Lambda_1(t) \right\} \times        \exp\left\{ - \Lambda_2(t) \right\} .
+\end{align*}
+\end{itemize}
+\textbf{Hazard of the subdistribution} 
+\begin{center}
+  $\gamma_c(t) = {f_c(t)}/[1 - F_c(t)]$
+\end{center}	
+\begin{itemize}
+\item Is not the same as 
+$\lambda_c(t) = f_c(t)/[1-F(t)]$,
+\item Interpretation tricky!
+\end{itemize}
+
+
+## Warning of "net risk" and "cause-specific survival"
+
+\begin{itemize}                              
+\item
+The ``\textbf{\textit{net risk}}'' of outcome $c$ by time $t$, 
+assuming hypothetical elimination of competing risks,
+is often defined as
+\begin{center}
+$ F_c^*(t) = 1 - S_c^*(t) = 1- \exp\{ - \Lambda_c(t) \} $
+\end{center}
+\medskip
+\item
+In clinical survival studies, function 
+$S_c^*(t)$ is often called ``\textbf{\textit{cause-specific survival}}'',
+and estimated by KM, but treating competing deaths
+as censorings.
+\medskip
+\item
+Yet, these *-functions, $ F_c^*(t)$ and $S_c^*(t)$, lack proper probability interpretation when
+ competing risks exist.
+\medskip
+\item
+Hence, their use and naive KM estimation should be viewed critically
+(Andersen \& Keiding, \textit{Stat Med}, 2012)
+\end{itemize}
+
+
+
+## Example: Risk of lung cancer by age $a$?
+
+\begin{itemize}
+\item 
+ Empirical \textbf{cumulative rate} 
+CR$(a) = \sum_{k < a} I_k \Delta_k$, i.e.
+ ageband-width ($\Delta_k$) weighted 
+ sum of empirical 
+ age-specific incidence rates $I_k$
+ up to a given age $a$ \\
+ = estimate of cumulative hazard $\Lambda_c(a)$.
+ \medskip
+ \item 
+ Nordcan \& Globocan give 
+``\textbf{\textit{cumulative risk}}'' by 75 y of age, computed from 
+$1 - \exp\{-\text{CR}(75)\}$, as an estimate  of the probability of 
+getting cancer before age $75$ y, 
+assuming that death were avoided by that age. This is based on 
+deriving ``net risk'' from cumulative hazard:
+\begin{center} 
+$ F_c^*(a) = 1 - \exp\{ - \Lambda_c(a) \}. $
+\end{center}
+\medskip
+\item
+Yet, cancer occurs in a mortal population.
+\medskip
+\item
+As such CR$({75})$ is a sound age-standardized summary 
+ measure for comparing cancer incidence across populations 
+ based on a neutral standard population.
+\end{itemize}
+
+
+## Example. Male lung cancer in Denmark
+
+Event-specific hazards $\lambda_c(a)$ by age estimated by age-spec. rates of death and lung ca., resp.
+
+\includegraphics[height=6.5cm]{lung-ca-rates}
+
+
+
+
+## Cumulative incidence of lung cancer by age
+
+\includegraphics[height=6.5cm]{lung-ca-prob}
+
+Both \text{CR} and $1 - \exp(- \text{CR})$ tend to \newline
+ overestimate the real cumulative incidence CI after 60 y.
+
+
+## Non-parametric estimation of CIF 
+
+\begin{itemize}
+\item
+Let $t_1 < t_2 < \dots < t_K$ be the $K$ distinct 
+time points at which any outcome event was observed, \\ Let also
+ $\widetilde{S}(t)$ be KM estimator for overall $S(t)$. 
+\medskip
+\item
+\textbf{Aalen-Johansen estimator} (AJ) for the cumulative incidence function $F(t)$
+is obtained as
+$$ 
+\widetilde{F}_c(t) 
+   = \sum_{t_k \leq t} \frac{D_{kc}}{n_k} \times \widetilde{S}(t_{k-1}),
+   \quad\text{where}
+$$
+$n_k$ = size of the risk set at $t_k$ $(k=1, \dots, K)$,
+\\
+$D_{kc}$ = no. of cases of event $c$ observed  at $t_k$.
+\medskip
+\item
+Naive KM estimator $\widetilde{F}^*_c(t)$ of ``net survival'' treats  
+competing events occuring first as censorings:  
+$$  
+\widetilde{F}^*_c(t) = 1 - \widetilde{S}^*_c(t)
+  = 1 - \prod_{t_k \leq t} \frac{n_k - D_{kc}}{n_k} 
+$$
+\end{itemize}
+
+
+
+## R tools for competing risks analysis
+
+Package \texttt{mstate}
+\begin{itemize}
+\item \texttt{Cuminc(time, status, ...)}:  \\
+ AJ-estimates (and SEs) for each event type 
+  (\texttt{status}, value 0 indicating censoring)
+\end{itemize}
+Package \texttt{cmprsk}
+\begin{itemize}
+\item \texttt{cuminc(ftime, fstatus, ...)} 
+  computes CIF-estimates,  
+   \texttt{plot.cuminc()} plots them. 
+  \medskip
+\item \texttt{crr()}
+ fits Fine--Gray models for 
+the hazard $\gamma_c(t)$ of the subdistribution
+\end{itemize}   
+Package \texttt{Epi} -- \texttt{Lexis} tools for multistate analyses
+
+
+
+
+
+## Ex. Survival from oral cancer
+
+\begin{itemize}
+\item
+Creating a {\tt Lexis} object with two outcome events and \\ 
+obtaining a summary of transitions
+\end{itemize}
+\scriptsize
+```{r, comment=NA,echo=T,message=FALSE,warning=FALSE,results='hide'}
+library(Epi)
+orca.lex <- Lexis(exit = list(stime = time), 
+           exit.status = factor(event, 
+    labels = c("Alive", "Oral ca. death", "Other death") ),
+                  data = orca)
+summary(orca.lex)  
+```
+```{r, comment=NA,echo=F,message=FALSE,warning=FALSE}
+summary(orca.lex)  
+```
+
+
+
+
+
+## Box diagram for transitions
+
+Interactive use of function \tt boxes().
+\small
+```{r, comment=NA,echo=T,message=FALSE,warning=FALSE,eval=FALSE}
+boxes(orca.lex)
+```
+\begin{center}
+\includegraphics[height=6cm]{orca-boxes}
+\end{center}
+\normalsize
+
+
+
+## Ex. Survival from oral cancer
+
+\begin{itemize}
+\item
+AJ-estimates of CIFs (solid) for both causes.
+\item
+Naive KM-estimates of CIF (dashed) $>$ AJ-estimates 
+\item
+CIF curves may also be stacked (right).  
+\end{itemize}
+
+\includegraphics[width=10cm]{orcaCI1}
+
+\textbf{NB.} The sum of the naive KM-estimates of CIF exceeds 100\% at 13 years! 
+
+
+
+
+## Ex. CIFs by cause in men and women
+
+\includegraphics[width=10cm]{orcaCI2}
+
+CIF for cancer higher in women (chance?) but for other causes
+higher in men (no surprise).
+
+
+## Modelling with competing risks
+
+
+Main options, providing answers to different questions:
+
+\begin{enumerate}[(a)]
+\item
+  Cox model for event-specific hazards $\lambda_c(t) = f_c(t)/[1-F(t)]$, when \textit{e.g.} the interest is in the biological effect of the prognostic factors on the fatality of the very disease that often leads to the relevant outcome. 
+  
+  \vspace{0.1in}
+  If $\lambda_1(y_i)$ and $\lambda_2(y_i)$ have no common parameters,
+  % event-specific hazards 
+  they may be fitted separately treating competing events
+  as censorings. \\ -- Still, avoid estimating ``net risks'' from 
+  $F_c^* = 1 - \exp(-\Lambda_c)$!  
+  \bigskip 
+\item
+ \textbf{Fine--Gray model} for the hazard  of the subdistribution $\gamma_c(t) = f_c(t)/[1-F_c(t)]$ 
+  when we want to assess the impact of the factors on the overall cumulative incidence of event $c$.  \\
+  -- Function \texttt{crr()} in package \texttt{cmprsk}. 
+\end{enumerate}
+
+
+
+
+## Fine-Gray model
+   
+\begin{itemize}
+\item
+Regression model for subdistribution hazards
+\item
+CIF quantifies cumulative disease incidence
+\item 
+Risk ratio of subdistribution hazards can be used to assess the effects of covariates on CIF 
+\item
+The same subdistribution hazard model allow one to
+make inferences about the relative magnitudes of the effects of the covariates on the incidence of the given type of event
+\item 
+The direction of the subdistribution hazard ratio denotes the direction but does not directly provide the magnitude of the
+effect of the covariate on the CIF.
+\end{itemize}
+
+
+## Estimation: Fine-Gray model vs Cox model
+
+\scriptsize
+```{r, comment=NA,echo=T,results='hide'}
+orca <- read.table("oralca2.txt", header=T)
+orca$agegr <- cut(orca$age,c(0,55,75,Inf),right=F)
+table(orca$agegr)
+```
+
+\vspace{-1.2cm}
+
+```{r, comment=NA,echo=F}
+orca <- read.table("oralca2.txt", header=T)
+orca$agegr <- cut(orca$age,c(0,55,75,Inf),right=F)
+table(orca$agegr)
+```
+
+\normalsize
+- Estimation of cause-specific hazards
+
+\scriptsize
+```{r, comment=NA,echo=T}
+cox1 <- coxph(Surv(time, event==1) ~ sex + agegr + stage, data=orca)
+cox2 <- coxph(Surv(time, event==2) ~ sex + agegr + stage, data=orca)
+```
+
+\normalsize
+- Estimation of subdistribution hazards
+
+\scriptsize
+```{r, comment=NA,echo=T}
+library(cmprsk)
+fg1 <- crr(orca$time, orca$event, cov1 = model.matrix(cox1), failcode=1)
+fg2 <- crr(orca$time, orca$event, cov1 = model.matrix(cox2), failcode=2)
+```
+\normalsize
+
+## Estimation: RRs for death from cancer
+
+\footnotesize
+```{r, comment=NA,echo=T}
+round( ci.exp(cox1), 2)
+round(summary(fg1, Exp=T)$conf.int[,-2], 2)
+```
+
+
+## Estimation: RRs for death from other causes
+
+\footnotesize
+```{r, comment=NA,echo=T}
+round( ci.exp(cox2), 2)
+round(summary(fg2, Exp=T)$conf.int[,-2], 2)
+```
+
+
+## Recommendations for analysing competing risk data
+   
+\begin{itemize}
+\item
+Cumulative incidence functions (CIFs) should be used to estimate the
+incidence of each of the different types of competing risks. {\bf Do not use the
+Kaplan-Meier estimate} of the survival function for this purpose.
+\item
+Researchers need to decide whether the research objective:
+\begin{itemize}
+\item
+Use the {\bf Fine-Gray} subdistribution hazard model when the focus is on
+ estimating {\bf incidence} or predicting {\bf prognosis} in the presence of competing
+risks.
+\item
+Use the {\bf cause-specific hazard} model (e.g. Cox model) when the focus is on addressing
+{\bf etiologic} questions.
+\end{itemize}
+\item
+In some settings, both types of regression models should be estimated for
+each of the competing risks to permit a full understanding of the effect of
+covariates on the incidence and the rate of occurrence of each outcome.
+\end{itemize}
+
