@@ -1,0 +1,257 @@
+---
+title: 'Epidemiologic data analysis using R '
+author:
+- Faculty of Social Sciences, University of Tampere
+- ' -- '
+- Janne Pitkaniemi / Karri Seppä
+date: 23.3.2020
+output:
+  word_document: default
+  pdf_document: default
+subtitle: Practicals 9
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r p7_0, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, comment = NA)
+options(warn=-1)
+setwd("C:/Users/karri.seppa/Documents/TRE")
+```
+
+
+# Topics of practical 9
+
+
+
+Learning objectives of this practical
+
+*   Compare estimates and interpretations of different survival measures (overall, cause-specific and relative survival, and 1-cumulative incidence)
+*   Age standardisation of relative survival
+*   Piecewise constant excess hazard model for relative survival
+
+
+# Survival analysis: Rectal cancer patients
+
+
+## Description of the data
+
+
+Data frame ``sire`` includes observations of a simulated cohort of 8243 female Finnish rectal cancer patients diagnosed between 1993-2012.
+The dataset contains the following variables:
+
+variable    | description
+----------- | --------------------
+sex         | 0 = Male, 1 = Female   
+bi_date     |date of birth  
+dg_date     |date of cancer diagnosis 
+ex_date     |date of exit from follow-up (death or censoring)
+status      |status at the end of follow-up (numeric): \newline 0 = alive, 1 = death from rectal cancer, 2 = death from other causes. 
+dg_age      | age at diagnosis (in fractional years)
+
+            
+
+## Loading the packages and the data
+
+
+Load the R packages ``Epi`` and ``popEpi`` needed in this exercise.
+```{r p9_1, eval=TRUE,echo=TRUE,warnings=FALSE, message=FALSE, results='hide'}
+library(Epi)
+library(popEpi)
+#mortality rates of the population of Finland (included in popEpi package)
+pm <- popmort
+```
+
+
+
+
+First, let's estimate the different measures of survival by using ``survtab`` function in ``popEpi`` package.
+
+## Lexis object with multi-state set-up
+
+
+```{r p9_2, eval=TRUE,echo=TRUE,warnings=FALSE}
+sire$agegr <- cut(sire$dg_age,c(0,45,55,65,75,Inf),right=F)
+
+Lex <- Lexis(entry = list(FUT = 0, AGE = dg_age, 
+                          CAL = cal.yr(dg_date)),
+             exit = list(CAL = cal.yr(ex_date)),
+             data = sire,
+             exit.status = factor(status, levels = 0:2,
+                                  labels = c("alive", "canD", "othD")),
+             merge = TRUE)
+```
+
+
+## Overall survival
+
+In overall survival, outcome event is death from any cause.
+
+```{r p9_3, echo=TRUE, message=F}
+#piecewise constant hazard using monthly intervals
+BL <- list(FUT=seq(0, 15, by = 1/12))
+#overall survival
+st.obs <- survtab(
+  Surv(time=FUT, event=lex.Xst%in%c("canD", "othD")) ~ 1, 
+  data = Lex,surv.type = "surv.obs",breaks = BL)
+#summary(st.obs,t=c(1,5,10,15))
+```
+
+
+
+
+
+## 1 - Cumulative incidence of rectal cancer death
+
+One minus cumulative incidence = Proportion of patients who avoid death from rectal cancer in the presence of other causes of death. Rectal cancer death is avoided if a patient died from other causes than cancer.
+
+```{r p9_4, echo=TRUE, message=F}
+st.cif <- survtab(Surv(time = FUT, event = lex.Xst) ~ 1, 
+                  data = Lex, 
+                  surv.type = "cif.obs",breaks = BL)
+#summary(st.cif,t=c(1,5,10,15))
+```
+
+
+
+
+
+## Relative survival
+
+Relative survival gives an estimate of net survival = the proportion of patients alive in the absence of other causes of death than cancer
+
+```{r p9_5, echo=TRUE, message=F}
+names(pm) <- c("sex","CAL","AGE","haz")
+w <- table(Lex$agegr)
+w <- list(agegr = as.numeric(w))
+st.rel <- survtab(
+  Surv(time = FUT, event = lex.Xst%in%c("canD", "othD")) 
+    ~ adjust(agegr), data = Lex, pophaz = pm,
+    surv.type = "surv.rel",breaks = BL, weights=w)
+#summary(st.rel,t=c(1,5,10,15))
+```
+
+
+
+
+## Cause-specific survival (event = death from rectal cancer)
+
+In cause-specific survival (normal Kaplan-Meier), outcome event is death from rectal cancer. It gives an estimate of net survival = the proportion of patients alive in the absence of other causes of death than cancer
+
+```{r p9_6, echo=TRUE, message=F}
+st.cause<- survtab(
+  Surv(time = FUT, event = lex.Xst) ~ adjust(agegr), 
+  data = Lex, pophaz = pm,
+  surv.type = "surv.cause",breaks = BL, weights=w)
+#summary(st.cause,t=c(1,5,10,15))
+```
+
+
+```{r p9_7, echo=FALSE, message=FALSE, results='hide',fig.width=8,fig.height=8}
+plot(st.obs,conf.int=F,ylim=c(0,1),ylab="")
+lines(st.cif$Tstop,1-st.cif$CIF_canD,col="magenta")
+lines(st.rel,y="r.e2.as",conf.int=F,col="dodgerblue")
+lines(st.cause,y="surv.obs.canD.as",conf.int=F,col="green")
+legend("bottomleft",c("Overall survival",
+                      "Proportion of patients who avoid rectal cancer death",
+                      "Relative survival (proportion who avoid rectal cancer death\n in the absence of other causes of death)",
+                      "Cause-specific survival (proportion who avoid rectal cancer death\n in the absence of other causes of death)"),
+       col=c("black","magenta","blue","green"),lty=1)
+```
+
+Compare the estimates and their interpretation.
+Remember that the probability interpretation of relative survival and cause-specific survival relies on the assumption that competing risks are independent, and you never know whether it is true or not. 
+
+Relative and cause-specific survival are, however, useful summary measures of excess mortality and cause-specific mortality, respectively, when the aim is to compare cancer survival between calendar periods (or e.g. countries) between which mortality due to other causes of death may also differ. 
+
+
+# Age-standardised relative survival
+
+Has rectal cancer survival in improved from 1993-2002 to 2003-2012. Estimate the age-standardised relative survival using ICSS weights and the Pohar Perme estimator.  
+
+```{r p9_8, echo=TRUE, message=F}
+Lex$period <- cut( cal.yr(Lex$dg_date), c(1993,2003,2013), right=F,dig.lab = 4)
+ICSS1 <- aggregate(ICSS1~cut(ICSS$age, 
+                   c(0,45,55,65,75,Inf), right = FALSE), 
+                   data = ICSS, FUN = sum)
+w <- list(agegr = ICSS1$ICSS1)
+st.rel <- survtab(
+  Surv(time = FUT, event = lex.Xst%in%c("canD", "othD")) 
+  ~ sex + period + adjust(agegr), 
+  data = Lex,pophaz = pm,
+  surv.type = "surv.rel",breaks = BL, weights=w)
+summary(st.rel,t=c(1,5,10,15))
+```
+
+
+```{r p9_9, echo=FALSE, message=FALSE, results='hide'}
+plot(st.rel[st.rel$period=="[1993,2003)",])
+lines(st.rel[st.rel$period=="[2003,2013)",],col="red")
+legend("topright",c("1993-2002","2003-2012"),col=c("black","red"),lty=1)
+```
+
+
+
+# Regression model for relative survival
+
+Estimate the relative excess risk (ratio of excess hazards) for the difference in rectal cancer survival between 1993-2002 and 2003-2012. First, tabulate the observations by follow-up time interval, age group, sex and period.
+
+```{r p9_10, echo=TRUE, message=F}
+BL <- list(fot=c(0,3/12,1:5))
+names(pm) <- c("sex","year","agegroup","haz")
+sire$period <- cut( cal.yr(sire$dg_date), c(1993,2003,2013), right=F,dig.lab = 4)
+Lex <- lexpand(sire, birth = bi_date,
+               entry = dg_date, exit = ex_date,
+               status = status%in%1:2,
+               breaks = BL, pophaz = pm,pp=F,
+               aggre = list(fot,agegr,sex,period)
+)
+
+```
+
+The piecewise constant excess hazard model can be fitted using ``relpois_ag`` function in ``popEpi`` package:
+
+```{r p9_11, echo=TRUE, message=F}
+m1 <- relpois_ag(formula = from0to1 ~ period+fot*agegr, 
+                 data = Lex, d.exp = d.exp, offset = log(pyrs))
+ci.exp(m1)
+```
+
+Age-adjusted excess mortality among patients diagnosed in 2003-2012 is 0.78-fold compared to patients diagnosed in 1993-2002. 
+
+In cancer survival, it is almost always necessary to include interactions between follow-up time and age into the model (i.e. excess hazards are not proportional between age groups):
+
+```{r p9_12, echo=TRUE, message=F}
+m0 <- relpois_ag(formula = from0to1 ~ period+fot + agegr, 
+                 data = Lex, d.exp = d.exp, offset = log(pyrs))
+anova(m0,m1,test="LRT")
+```
+
+The same model can be fitted using ``glm`` function. The link function of relative survival Poisson regression can be specified as follows:
+
+```{r p9_13, echo=TRUE, message=F}
+Lex$FUT <- cut( Lex$fot, c(0,3/12,1:5), right=F)
+d_star <- Lex$d.exp
+
+#define link function for relative survival regression
+rspois <- poisson()
+rspois$link <- "glm relative survival model with Poisson error"
+rspois$linkfun <- function(mu) log(mu - d_star)
+rspois$linkinv <- function(eta) d_star + exp(eta)
+assign(".d_star", Lex$d.exp, env = .GlobalEnv)
+rspois$initialize <- expression({
+  if (any(y < 0)) stop(paste("Negative values not allowed for", 
+                             "the Poisson family"))
+  n <- rep.int(1, nobs)
+  mustart <- pmax(y, .d_star) + 0.1
+})
+
+#glm model
+m2 <- glm(formula = from0to1 ~ period+FUT*agegr, 
+          data = Lex, family=rspois, offset = log(pyrs))
+ci.exp(m2)
+```
+
+
+

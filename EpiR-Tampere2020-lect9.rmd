@@ -1,0 +1,509 @@
+---
+title: 
+- Statistical Methods in Cancer Epidemiology \newline using R
+author: 
+- \textbf{Karri Seppä}  \newline \newline
+- Finnish Cancer Registry  \newline  \newline
+- Lecture 9
+date: "Mar 23, 2020"
+institute: "karri.seppa@cancer.fi"
+output:
+  beamer_presentation:
+    includes:  
+         in_header: beamer_header.tex
+tables: true
+editor_options: 
+  chunk_output_type: console
+---
+
+## Points to be covered
+
+1. Relative survival estimators
+ \medskip
+2. Age-standardised relative survival
+ \medskip
+3. Period approach
+ \medskip
+4. Regression modelling of relative survival.
+
+
+- Packages \texttt{popEpi} and \texttt{rstpm2}.
+\medskip
+- Functions \texttt{survtab()}, \texttt{glm()}, \texttt{relpois\_ag()}, \texttt{stpm2()}.
+
+
+## Population-based cancer survival
+
+- Relative (net) survival is the standard measure in population-based cancer survival
+
+- Relative survival summarizes patients' excess mortality, i.e. additional mortality patients have compared with mortality in a relevant reference population.
+
+- Does not rely on cause of death information
+    - The **quality of cause-of-death information varies** over time, between types of cancer and between regions and countries.
+    - Many cancer registries **do not record cause of death**.
+    - Cause of death is rarely a simple dichotomy.
+
+
+
+## Excess mortality and relative survival
+
+- Total mortality among patients $\lambda(t)$ is the sum of population mortality $\lambda_\text{P}(t)$ and excess mortality $\lambda_\text{E}(t)$ due to cancer:
+\[\lambda(t)=\lambda_\text{P}(t) + \lambda_\text{E}(t)\]
+
+
+- Relative survival $S_E(t)$ is the survival function related to the excess mortality:
+\[S_\text{E}(t)=\exp\left[ - \int_0^t \lambda_\text{E}(u)\ du \right] \]
+    - Often interpreted as the survival **probability** in a hypothetical situation where the cancer would be the only possible cause of death with all other
+causes being eliminated.
+    - **N.B.** Independence of competing risks is required but this assumption cannot be assessed based on the data! 
+
+## Non-parametric relative survival estimators (hazard-based)
+
+- Ederer II (Ederer and Heise 1958)
+\[S_\text{E,EII}(t_k)=\exp\left(-\Delta_j\frac{d_j-d_j^*}{y_j} \right)\]
+    - $\Delta_j$ = length of follow-up time interval $j$
+    - $d_j$ = number of deaths 
+    - $d_j^*$ = expected number of deaths (same as in SMR estimation)
+    - $y_j$ = number person-years
+
+
+- Pohar Perme estimator (Pohar Perme et al. 2012)
+\[S_\text{E,PP}(t_k)\exp\left(-\Delta_j\frac{d_j^w-d_j^{*w}}{y_j^w} \right)\]
+    - $d_j^w$, $d_j^{*w}$ and $y_j^w$ are based on individual-level observations
+of $d_j$, $d_j^*$ and $y_j$ weighted by the patient-specific cumulative expected survival probability (see Seppä et al. 2016).
+
+
+
+## Properties of the estimators
+
+- Non-standardised Ederer II estimator overestimates relative survival because of informative censoring of old patients with high other-cause mortality
+    - use age-standardised Ederer II
+
+- Pohar Perme estimator corrects for this bias by giving larger weights for  observations of older patients
+
+- Both the Pohar Perme and the age-standardised
+Ederer II estimator are valid for 5-year net survival of cancer patients.
+
+
+## Age-standardised relative survival
+
+\begin{itemize}
+\item  Weighted average of age-specific relative survival estimates
+\begin{enumerate}[]
+\item $S_\text{E}(t)=\sum_{a=1}^K w_aS_{\text{E},a}(t)\quad$ where $\sum_{a=1}^K w_a =1$
+\end{enumerate}
+\begin{itemize}
+\item weight $w_a$ is a standard for the proportion of patients in age group $a$ \underline{at the beginning of follow-up} 
+\end{itemize}  
+\end{itemize}  
+
+- E.g. International Cancer Survival Standards 
+    - ICSS1: elderly (most cancers)
+    - ICSS2: little age dependence (eg. melanoma, brain, cervix)
+    - ICSS3: young adults (eg. testis, hodgkin lymphoma); starify 15-44 into narrower groups
+    
+
+Age group ($a$) | $w_\text{ICSS1}$ | $w_\text{ICSS2}$ | $w_\text{ICSS3}$
+--------------- | ---------------- | ---------------- | -----------------
+15-44           | 0.07             | 0.28             | 0.60
+45-54           |	0.12             | 0.17             |	0.10
+55-64           | 0.23             | 0.21	            | 0.10
+65-74           | 0.29             | 0.20             |	0.10
+75+             | 0.29	           | 0.14             |	0.10
+
+
+## Ex. Oral cancer data
+
+Relative survival analysis
+
+- expected mortality is derived from the  mortality rates in the population of Finland
+
+- assume the date on diagnosis would a random date between 1985 and 2005.
+
+
+\footnotesize
+```{r, comment=NA,echo=T}
+orca <- read.table(file="oralca2.txt")
+library(Epi)
+library(popEpi)
+set.seed(23032020)
+orca$dg_date <- runif(nrow(orca), min=1985, max=2005)
+orca$sex <- ifelse(orca$sex=="Male",0,1)
+names(orca)[2] <- "dg_age"
+Lex <- Lexis(entry = list(FUT = 0, AGE = dg_age, CAL = dg_date), 
+           exit = list(FUT = time), 
+           data = orca,
+           exit.status = 
+             factor(event, levels = 0:2, 
+                    labels = c("alive", "canD", "othD")), 
+           merge = TRUE)
+```
+
+## Ex. Oral cancer data, Ederer II and Pohar Perme
+
+\footnotesize
+```{r, comment=NA,echo=T,message=FALSE}
+pm <- popmort
+names(pm) <- c("sex", "CAL", "AGE", "haz")
+cutpoints <- c(0,55,65,75,Inf)
+Lex$agegr <- cut(Lex$dg_age, cutpoints, right=F)
+
+#Age-standardised Ederer II estimator
+surv.EII <- survtab(FUT ~ 1 + adjust(agegr), data = Lex, 
+              surv.type = "surv.rel",
+              pophaz = pm, weights = "internal",
+              breaks = list(FUT = seq(0, 5, 1/12)))
+#Pohar Perme estimator
+surv.PP <- survtab(FUT ~ 1, data = Lex, 
+              surv.type = "surv.rel", relsurv.method = "pp",
+              pophaz = pm,
+              breaks = list(FUT = seq(0, 5, 1/12)))
+```
+
+## Ex. Oral cancer data, Ederer II and Pohar Perme
+
+\footnotesize
+```{r, comment=NA,echo=T,message=F,fig.height=5.5, dev.args=list(pointsize=23)}
+par(mar=c(4,4,0.5,1))
+plot(surv.EII, lwd=2, ylim=c(0,1))
+lines(surv.PP, lwd=2, col="red")
+legend("bottomleft",c("Age-standardised Ederer II (internal weights)",
+                    "Pohar Perme"),
+       lty=1, lwd=2 ,col=c("black","red"))
+```
+
+
+## Ex. Oral cancer data, ICSS weights
+
+Use external weights (ICSS1) in age standardisation:
+
+\footnotesize
+```{r, comment=NA,echo=T,message=F,fig.height=5.5, dev.args=list(pointsize=23)}
+ICSS$agegr <- cut(ICSS$age, cutpoints, right = FALSE)
+w <- aggregate(ICSS1~agegr, data = ICSS, FUN = sum)
+w
+```
+
+## Ex. Oral cancer data, ICSS weights
+
+\footnotesize
+```{r, comment=NA,echo=T,message=F,fig.height=5.5, dev.args=list(pointsize=23)}
+Lex$agegr <- cut(Lex$dg_age, cutpoints, right=F)
+surv.EII.ICSS <- survtab(FUT ~ 1+adjust(agegr), data = Lex, 
+              surv.type = "surv.rel",
+              pophaz = pm, weights = w$ICSS1,
+              breaks = list(FUT = seq(0, 5, 1/12)))
+surv.PP.ICSS <- survtab(FUT ~ 1+adjust(agegr), data = Lex, 
+              surv.type = "surv.rel",relsurv.method = "pp",
+              pophaz = pm, weights = w$ICSS1,
+              breaks = list(FUT = seq(0, 5, 1/12)))
+```
+
+
+
+## Ex. Oral cancer data, internal vs ICSS weights
+
+\footnotesize
+```{r, comment=NA,echo=T,fig.show='hide',message=F}
+par(mar=c(4,4,0.5,1))
+plot(surv.EII, lwd=2, conf.int=F,ylim=c(0,1)) 
+lines(surv.PP, lwd=2,col="red", conf.int=F)
+lines(surv.EII.ICSS, lwd=2, lty=2, conf.int=F)
+lines(surv.PP.ICSS, lwd=2,col="red",lty=2, conf.int=F)
+
+legend("bottomleft",c("Age-standardised Ederer II (internal weights)",
+                    "Pohar Perme",
+                    "Age-standardised Ederer (ICSS weights)",
+                    "Age-standardised Pohar Perme (ICSS weights)"),
+       lty=c(1,1,2,2), lwd=2,col=c("black","red","black","red"))
+```
+
+## Ex. Oral cancer data, ICSS weights
+
+\footnotesize
+```{r, comment=NA,echo=F,message=F,fig.height=5.5, dev.args=list(pointsize=20)}
+par(mar=c(4,4,0.5,1))
+plot(surv.EII, lwd=2, conf.int=F,ylim=c(0,1)) 
+lines(surv.PP, lwd=2,col="red", conf.int=F)
+lines(surv.EII.ICSS, lwd=2, lty=2, conf.int=F)
+lines(surv.PP.ICSS, lwd=2,col="red",lty=2, conf.int=F)
+
+legend("bottomleft",c("Age-standardised Ederer II (internal weights)",
+                    "Pohar Perme",
+                    "Age-standardised Ederer (ICSS weights)",
+                    "Age-standardised Pohar Perme (ICSS weights)"),
+       lty=c(1,1,2,2), lwd=2,col=c("black","red","black","red"))
+```
+
+## Period approach
+
+- Survival estimates in a cohort of patients tend to be outdated
+    - 5-year survival estimate requires follow-up data on patients diagnosed $\geq 5$ years ago.
+    
+- Use period approach (Brenner et al. 2004) to produce maximally
+updated estimates of patient survival
+    - follow-up of patients is restricted to a calendar time window.
+    - e.g. patients diagnosed in 2011-2018 and followed-up in 2016-2018.
+    - patients diagnosed earlier than 2016 do not contribute to survival estimate before coming to the follow-up window 2016-2018 (late entry).
+    - interpretation: survival in patients, who would have the same follow-up time specific excess mortality rates as those observed in 2016-2018. (A prediction for patients diagnosed in 2016-2018.) 
+
+
+## Period approach
+
+Example: 5-year survival based on patients diagnosed in 2011-2018 and followed in calendar time window 2016-2018. 
+
+\includegraphics[height=7cm]{period_approach}
+
+## Ex. Oral cancer data, period approach
+
+\footnotesize
+```{r, comment=NA,echo=T,message=F,fig.height=5.5, dev.args=list(pointsize=20)}
+#Age-standardised Ederer II estimator
+surv.EII.period <- survtab(FUT ~ 1 + adjust(agegr), data = Lex, 
+              surv.type = "surv.rel",
+              pophaz = pm, weights = "internal",
+              breaks = list(FUT = seq(0, 5, 1/12), CAL=c(2002,2005)))
+```
+
+## Ex. Oral cancer data, period approach
+
+\footnotesize
+```{r, comment=NA,echo=T,message=F,fig.height=5.5, dev.args=list(pointsize=20)}
+#Age-standardised Ederer II estimator
+par(mar=c(4,4,0.5,1))
+plot(surv.EII, lwd=2, conf.int=F,ylim=c(0,1)) 
+lines(surv.EII.period, lwd=2,col="red", conf.int=F)
+legend("bottomleft",c("Diagnosed in 1985-2004",
+         "Diagnosed in 1985-2004 and followed-up in 2002-2004"),
+       lty=c(1,1), lwd=2,col=c("black","red"))
+```
+
+
+
+## Regression models for relative survival
+
+1. Logarithm of excess mortality
+\[\log[\lambda_\text{E}(t)]=\alpha+\beta X\]
+    
+- can be modelled by using Poisson regression with a user-specified link function (Dickman et al. 2004).
+
+\medspace
+
+2. Logarithm of cumulative excess mortality
+
+\[\log[\Lambda_\text{E}(t)]=\text{spline}[log(t)\mid \alpha]+\beta X\]
+    
+- can be modelled using spline functions for the baseline cumulative excess hazard (\texttt{rstpm2} package)
+
+
+## Ex. Oral cancer data, piecewise constant excess hazard
+
+\footnotesize
+```{r, comment=NA,echo=T,message=F,fig.height=8, dev.args=list(pointsize=20)}
+#cutpoints for piecewise constant excess hazard
+fb <- c(0,1,2,3,5)
+pm2 <- pm
+names(pm2) <- c("sex","year","agegroup","haz")
+orca$agegr <- cut(orca$dg_age, cutpoints, right=F)
+#combines orca and population mortality rates
+Lex <- lexpand(orca, birth = dg_date-dg_age, entry = dg_date,
+             exit = dg_date+time, status=event %in% 1:2,
+             breaks = list(fot=fb), 
+             pophaz=pm2, pp = FALSE,
+             aggre = list(agegr, fot))
+```
+
+## Ex. Oral cancer data, piecewise constant excess hazard
+
+Aggregated data
+
+\footnotesize
+```{r, comment=NA,echo=T,message=F,fig.height=8, dev.args=list(pointsize=20)}
+Lex
+```
+
+
+## Ex. Oral cancer data, piecewise constant excess hazard
+
+Proportional hazards between age groups?
+
+\footnotesize
+```{r, comment=NA,echo=T,message=F,fig.height=8, dev.args=list(pointsize=20)}
+## fit model using aggregated data
+rpm <- relpois_ag(formula = from0to1 ~ fot + agegr,  
+                  data = Lex, d.exp = d.exp, offset = log(pyrs))
+ci.exp(rpm)
+ 
+## non-proportional effect of age (=follow-up time age interaction)
+rpm2 <- update(rpm, . ~ fot*agegr)
+anova(rpm, rpm2, test="LRT")$`Pr(>Chi)`[2]
+```
+
+## Ex. Oral cancer data, spline functions
+
+Mortality from any cause and from cancer, and excess mortality
+
+\footnotesize
+```{r, comment=NA,echo=T,message=F,fig.height=5.5, dev.args=list(pointsize=20),warning=FALSE}
+library(rstpm2)
+orca$agegr <- cut(orca$dg_age, cutpoints, right=F)
+
+#mortality from any cause
+fit <- stpm2(Surv(time,event%in%c(1,2))~1,
+             data=orca,df=3)
+
+#cause (cancer)-specific mortality
+fit2 <- stpm2(Surv(time,event%in%c(1))~1,
+              data=orca,df=3)
+
+#excess mortality
+orca$ex_age <- floor(orca$dg_age+orca$time)
+orca$ex_year <- floor(orca$dg_date+orca$time)
+orca <- merge(orca,pm,
+              by.x=c("sex","ex_age","ex_year"),
+              by.y=c("sex","AGE","CAL"))
+fit3 <- stpm2(Surv(time,event%in%c(1,2))~1,
+              data=orca,df=3,
+              bhazard=orca$haz)
+```
+
+## Ex. Oral cancer data, hazard
+
+\footnotesize
+```{r, comment=NA,echo=T,message=F,fig.height=5.5, dev.args=list(pointsize=20),fig.show='hide'}
+plot(fit,newdata=data.frame(time=seq(0.1,5,0.1)),
+     type="hazard",add=FALSE,ci=FALSE,line.col=1,
+     ylim=c(0.01,0.3),rug=F)
+plot(fit2,newdata=data.frame(time=seq(0.1,5,0.1)),
+     type="hazard",add=TRUE,ci=FALSE,line.col=2)
+plot(fit3,newdata=data.frame(time=seq(0.1,5,0.1)),
+     type="hazard",add=TRUE,ci=FALSE,line.col=3)
+legend("topright",
+       legend=c("Total mortality",
+                "Oral cancer mortality",
+                "Excess mortality"),
+       col=c("black","red","green"),lty=1)
+```
+
+## Ex. Oral cancer data, hazard
+
+\footnotesize
+```{r, comment=NA,echo=F,message=F,fig.height=8, dev.args=list(pointsize=20)}
+plot(fit,newdata=data.frame(time=seq(0.1,5,0.1)),
+     type="hazard",add=FALSE,ci=FALSE,line.col=1,
+     ylim=c(0.01,0.3),rug=F)
+plot(fit2,newdata=data.frame(time=seq(0.1,5,0.1)),
+     type="hazard",add=TRUE,ci=FALSE,line.col=2)
+plot(fit3,newdata=data.frame(time=seq(0.1,5,0.1)),
+     type="hazard",add=TRUE,ci=FALSE,line.col=3)
+legend("topright",
+       legend=c("Total mortality",
+                "Oral cancer mortality",
+                "Excess mortality"),
+       col=c("black","red","green"),lty=1)
+```
+
+<!---
+
+## Ex. Oral cancer data, spline by age 
+
+Assuming proportional hazards
+
+\footnotesize
+```{r, comment=NA,echo=T,message=F,fig.height=8, dev.args=list(pointsize=20),fig.show='hide',eval=F}
+#proportional hazards between age groups
+fit4 <- stpm2(Surv(time,event%in%c(1,2))~agegr,
+              data=orca,df=3,
+              bhazard=orca$haz)
+
+# allowing for non-proportional hazards
+fit5 <- stpm2(Surv(time,event%in%c(1,2))~agegr,
+              data=orca,df=3,tvc=list(agegr=3),
+              bhazard=orca$haz)
+
+plot(fit4,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[0,55)"),
+     type="hazard",add=FALSE,ci=FALSE,line.col=1,lwd=2,
+     ylim=c(0.01,0.45),rug=F)
+plot(fit4,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[0,55)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=2,lwd=2)
+plot(fit4,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[55,65)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=3,lwd=2)
+plot(fit4,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[65,75)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=4,lwd=2)
+plot(fit4,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[75,Inf)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=5,lwd=2)
+legend("topright",
+       legend=c("0-44","45-54","55-64","65-74","75+"),
+       col=1:5,lty=1,lwd=2)
+```
+
+
+## Ex. Oral cancer data, spline by age 
+
+Assuming proportional hazards
+
+\footnotesize
+```{r, comment=NA,echo=F,message=F,fig.height=8, dev.args=list(pointsize=20),eval=F}
+par(mar=c(4,4,1,1))
+plot(fit4,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[0,55)"),
+     type="hazard",add=FALSE,ci=FALSE,line.col=1,lwd=2,
+     ylim=c(0.01,0.45),rug=F)
+plot(fit4,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[0,55)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=2,lwd=2)
+plot(fit4,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[55,65)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=3,lwd=2)
+plot(fit4,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[65,75)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=4,lwd=2)
+plot(fit4,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[75,Inf)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=5,lwd=2)
+legend("topright",
+       legend=c("0-44","45-54","55-64","65-74","75+"),
+       col=1:5,lty=1,lwd=2)
+```
+
+## Ex. Oral cancer data, spline by age
+
+Allowing for non-proportional hazards
+
+\footnotesize
+```{r, comment=NA,echo=T,message=F,fig.height=8, dev.args=list(pointsize=20),fig.show='hide',eval=F}
+plot(fit5,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[0,55)"),
+     type="hazard",add=FALSE,ci=FALSE,line.col=1,lwd=2,
+     ylim=c(0.01,0.45),rug=F)
+plot(fit5,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[0,55)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=2,lwd=2)
+plot(fit5,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[55,65)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=3,lwd=2)
+plot(fit5,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[65,75)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=4,lwd=2)
+plot(fit5,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[75,Inf)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=5,lwd=2)
+legend("topright",
+       legend=c("0-44","45-54","55-64","65-74","75+"),
+       col=1:5,lty=1,lwd=2)
+```
+
+## Ex. Oral cancer data, spline by age
+
+Allowing for non-proportional hazards
+
+\footnotesize
+```{r, comment=NA,echo=F,message=F,fig.height=8, dev.args=list(pointsize=20),eval=F}
+par(mar=c(4,4,1,1))
+plot(fit5,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[0,55)"),
+     type="hazard",add=FALSE,ci=FALSE,line.col=1,lwd=2,
+     ylim=c(0.01,0.45),rug=F)
+plot(fit5,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[0,55)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=2,lwd=2)
+plot(fit5,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[55,65)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=3,lwd=2)
+plot(fit5,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[65,75)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=4,lwd=2)
+plot(fit5,newdata=data.frame(time=seq(0.1,5,0.1),agegr="[75,Inf)"),
+     type="hazard",add=TRUE,ci=FALSE,line.col=5,lwd=2)
+legend("topright",
+       legend=c("0-44","45-54","55-64","65-74","75+"),
+       col=1:5,lty=1,lwd=2)
+```
+
+--->
