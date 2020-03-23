@@ -185,7 +185,7 @@ summary(st.rel,t=c(1,5,10,15))
 ```
 
 
-```{r p9_9, echo=FALSE, message=FALSE, results='hide'}
+```{r p9_9, echo=T, message=FALSE, results='hide'}
 plot(st.rel[st.rel$period=="[1993,2003)",])
 lines(st.rel[st.rel$period=="[2003,2013)",],col="red")
 legend("topright",c("1993-2002","2003-2012"),col=c("black","red"),lty=1)
