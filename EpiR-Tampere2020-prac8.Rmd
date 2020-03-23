@@ -145,6 +145,7 @@ cif2 <- survfit( Surv( time, event, type="mstate") ~ stage,
     col=rainbow(5), ylim = c(0, 0.7) )
  plotCIF(cif2, 2, main= "Other deaths by stage",
     col=rainbow(5), ylim = c(0, 0.7) )
+legend("topleft",levels(orca.lex$stage),col=rainbow(5),lty=1)
 ```
 
 Compare the two plots. What would you conclude about the
@@ -184,3 +185,6 @@ summary(fit.finegray)
 
 
 After adjusting subdistribution hazard for age the difference in cumulative cancer mortality between stages I and III is significant.
+
+
+

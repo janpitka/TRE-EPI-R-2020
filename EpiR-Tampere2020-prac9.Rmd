@@ -148,7 +148,7 @@ st.cause<- survtab(
 ```
 
 
-```{r p9_7, echo=FALSE, message=FALSE, results='hide',fig.width=8,fig.height=8}
+```{r p9_7, echo=T, message=FALSE, results='hide',fig.width=8,fig.height=8}
 plot(st.obs,conf.int=F,ylim=c(0,1),ylab="")
 lines(st.cif$Tstop,1-st.cif$CIF_canD,col="magenta")
 lines(st.rel,y="r.e2.as",conf.int=F,col="dodgerblue")
