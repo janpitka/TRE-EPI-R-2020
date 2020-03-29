@@ -60,7 +60,7 @@ causes being eliminated.
 ## Non-parametric relative survival estimators (hazard-based)
 
 - Ederer II (Ederer and Heise 1958)
-\[S_\text{E,EII}(t_k)=\exp\left(-\Delta_j\frac{d_j-d_j^*}{y_j} \right)\]
+\[S_\text{E,EII}(t_k)=\exp\left(-\sum_{j=1}^k\Delta_j\frac{d_j-d_j^*}{y_j} \right)\]
     - $\Delta_j$ = length of follow-up time interval $j$
     - $d_j$ = number of deaths 
     - $d_j^*$ = expected number of deaths (same as in SMR estimation)
@@ -68,7 +68,7 @@ causes being eliminated.
 
 
 - Pohar Perme estimator (Pohar Perme et al. 2012)
-\[S_\text{E,PP}(t_k)\exp\left(-\Delta_j\frac{d_j^w-d_j^{*w}}{y_j^w} \right)\]
+\[S_\text{E,PP}(t_k)\exp\left(-\sum_{j=1}^k\Delta_j\frac{d_j^w-d_j^{*w}}{y_j^w} \right)\]
     - $d_j^w$, $d_j^{*w}$ and $y_j^w$ are based on individual-level observations
 of $d_j$, $d_j^*$ and $y_j$ weighted by the patient-specific cumulative expected survival probability (see Seppä et al. 2016).
 
