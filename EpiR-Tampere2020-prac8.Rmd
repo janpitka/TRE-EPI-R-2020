@@ -68,7 +68,8 @@ Read the datafile ``oralca2.txt`` into an R data frame named orca.
 Look at the head, structure and the summary of the data frame. Using function ``table()`` count the numbers of censorings as well as deaths from oral cancer and other causes, respectively, from the event variable.
 
 ```{r p7_2, eval=TRUE,echo=TRUE,warnings=FALSE}
-orca <- read.csv("C:/Users/karri.seppa/Documents/TRE/oralca2.txt", sep="")
+#orca <- read.csv("C:/Users/karri.seppa/Documents/TRE/oralca2.txt", sep="")
+orca <- read.csv("~/GitHub/TRE-EPI-R-2020/oralca2.txt", sep="")
 head(orca)
 ```
 

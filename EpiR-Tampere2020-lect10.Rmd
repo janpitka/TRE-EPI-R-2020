@@ -1,18 +1,286 @@
 ---
 title: 
-- "Statistical Methods in Cancer Epidemiology using R"
-subtitle: Survival model with long term survivors
+- Causal inference 
+subtitle:
+- Statistical methods in Cancer Epidemiology using R
 author: 
 - \textbf{Janne Pitkäniemi}  \newline \newline
 - Faculty of Social Sciences, University of Tampere  \newline
 - Finnish Cancer Registry  \newline  \newline
-date: "Feb,17 2020 "
+date: "March,29 2020 "
 institute: "janne.pitkaniemi@cancer.fi"
 output:
   beamer_presentation:
     includes:  
          in_header: beamer_header.tex
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+#  Contents
+
+- 9.15-9.30 Previous practical recap 
+\medskip
+- 9.30-11.00 Causal inference 
+\medskip
+
+- Lectures are based on 
+   - Judea Pearl - "Causality"
+   - Judea Pearl - "The Book of Why"
+   
+"... all approaches to causation are variants or abstractions
+of ... structural theory ...". Judea Pearl
+```{r, echo=F,warning=FALSE,message=FALSE,comment=NA}
+library(ggdag)
+library(Epi)
+library(knitr)
+library(rmarkdown)
+library(medflex)
+
+```
+
+# Ladder of causal inference
+
+-  “ladder of causal inference” (Pearl J.)
+    - association (seeing) 
+    - intervention (doing)
+    - counterfactuals (imagining)
+
+- We will discover how directed acyclic graphs describe conditional (in)dependencies; 
+- how the do-calculus describes interventions
+- Structural Causal Models allow us to imagine what could have been.
+
+
+# What is a causal effect? 
+
+- interventionist position and say that a variable $X$ has a causal influence on $Y$ if changing $X$ leads to changes in $Y$.
+
+- This position is a very useful one in practice, but not everybody agrees with it (e.g., Cartwright, 2007).
+
+
+# Necessary, sufficient, contributory cause
+
+- **Necessary** For x to be a necessary cause of y, the presence of y must imply the prior occurrence of x. The presence of x, however, does not imply that y will occur
+
+- **Sufficient causes** For x to be a sufficient cause of y, the presence of x must imply the subsequent occurrence of y. However, another cause z may independently cause y. Thus the presence of y does not require the prior occurrence of x.
+
+- **Contributory causes** For x to be a contributory cause of y, the presence of x must increase the likelihood of y. If the likelihood is 100%, then x is instead called sufficient. A contributory cause may also be necessary.
+
+# Model elements - Directed Acyclic Graphs
+
+- Causal models have formal structures with elements with specific properties.
+
+- Structural causal models (SCMs): DAGs that portray causal assumptions about a set of variables. 
+
+- In DAGs, it doesn’t matter what form the relationship between two variables takes, only its direction.
+
+- Directed arrows ($E$) and nodes ($V$) $G=(V,E)$ 
+
+- **Acyclic**: no simultaneity, the future does not cause the past
+
+- **Assumptions**: 
+   - Absence of variables: all common (observed and unobserved) causes of any pair of variables
+   - Absence of arrows: zero causal effect
+
+# Model elements - Directed Acyclic Graphs
+
+- **Chains** are straight line connections with arrows pointing from cause to effect.  example of **chain** $Z\rightarrow X \rightarrow Y$
+
+- **fork** $X\leftarrow Z \rightarrow Y$
+
+- **inverted fork** $Z\rightarrow Y \leftarrow X$
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE,comment=NA, fig.height=4}
+theme_set(theme_dag())
+dagify(Y ~ X, X~Z, Y~Z) %>%  ggdag()
+```
+
+# Model elements - Directed Acyclic Graphs
+
+- Parents (Children): directly causing (caused by) a node 
+- Ancestors (Descendents): directly or indirectly causing (caused
+by) a node
+- Path: an acyclic sequence of adjacent nodes
+    - Causal path: all arrows pointing away from T and into Y
+    - Non-causal path: some arrows going against causal order
+- **Collider**: a vertex on a path with two incoming arrows
+
+- A **mediator** node modifies the effect of other causes on an outcome (as opposed to simply affecting the outcome
+
+- A **confounder** node affects multiple outcomes, creating a positive correlation among them
+
+# Confounding
+
+```{r, echo=FALSE}
+#Confunding
+
+n<-100000
+x<-rbinom(n,1,0.3)
+z<-rbinom(n,1,0.3)
+#lp0<-2* z
+#p<-exp(lp0)/(1+exp(lp0))
+lp1<-log(1)+log(2)*x+log(10)*z
+p<-exp(lp1)/(1+exp(lp1))
+y<-rbinom(n,1,p)
+```
+
+- Sample 100,000
+- Binary exposure, prevalence 30%
+- Binary confounder, prevalence 30%
+- Intercept =1.0
+- OR(Y,X)=2.0
+- OR(Y,Z)=10.0
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE,comment=NA, fig.height=4}
+
+theme_set(theme_dag())
+dagify(Y ~ X, X~Z, Y~Z) %>%  ggdag()
+```
+
+# Confounding
+
+Not controlling for confounding
+
+```{r,echo=T,warning=FALSE,message=FALSE,comment=NA}
+round(ci.exp(glm(y~x,family=binomial)),3)
+```
+
+Control for confounding
+
+```{r,echo=T,warning=FALSE,message=FALSE,comment=NA}
+round(ci.exp(glm(y~x+z,family=binomial)),3)
+```
+
+# Falling for collider
+
+- Sample 100,000
+- Binary exposure, prevalence 30%
+- Binary confounder, prevalence 30%
+- Intercept =1.0
+- OR(Y,X)=2.0
+- OR(Y,Z)=10.0
+
+
+```{r,echo=FALSE,warning=FALSE,message=FALSE,comment=NA, fig.height=4}
+
+theme_set(theme_dag())
+dagify(Y ~ X, Z~X, Z~Y) %>%  ggdag()
+```
+
+# Falling for collider
+
+```{r, echo=FALSE}
+n<-100000
+x<-rbinom(n,1,0.3)
+lp1<-log(1)+log(2)*x
+p<-log(1)+exp(lp1)/(1+exp(lp1))
+y<-rbinom(n,1,p)
+lp2<-log(1)+log(2)*x+log(10)*y
+p<-exp(lp2)/(1+exp(lp2))
+z<-rbinom(n,1,p)
+```
+
+This is the analysis that you would do assuming that 
+$Z$ is confounder - **Biased**
+
+```{r,echo=T,warning=FALSE,message=FALSE,comment=NA}
+round(ci.exp(glm(y~x+z,family=binomial)),3)
+```
+
+Ignoring the collider - you get **Unbiased** answer OR(Y,X)=2
+
+```{r, echo=T,warning=FALSE,message=FALSE,comment=NA}
+round(ci.exp(glm(y~x,family=binomial)),3)
+```
+
+# Mediation analysis
+
+- A mediated effect is also called an indirect effect and it occurs when the effect of the independent variable on the dependent variable is — as the name says — mediated by another variable:
+
+- A mediator must be endogenous: This means that the mediator cannot be the treatment or the conditions of the study
+
+- The mediator itself must be dependent on these exogenous variables.
+
+- A mediator (M) must reveal more about how the independent variable impacts the dependent variable: A mediator reveals something more about the process.
+
+# Mediation analysis
+
+De Smet et al. (2012) and Loeys et al. (2013) proposed emotional distress or the amount of negative affectivity experienced during the breakup as a mediating variable for the effect of attachment style towards the ex-partner before the breakup on displaying unwanted pursuit behaviors after the breakup.
+
+$![ ]("C:/Users/janne.pitkaniemi/Documents/GitHub/TRE-EPI-R-2020/Mediation1.png")
+
+
+# Mediation analysis - potential outcome
+
+- Natural effect models are conditional mean models for nested counterfactuals $Y (x,M(x^*))$:
+
+$$E{Y (x,M(x^*))|C} = \beta_0 + \beta_1 x + \beta_2 x^* + \beta_3 C,$$
+
+- $exp(\beta_1)$ captures the **natural direct effect** rate ratio (x, x+1)
+$$ \frac{ E(Y (x + 1,M(x))|C)} {E(Y\ (x,M(x))|C) } $$
+- $exp(\beta_2)$ captures the **natural indirect effect** rate ratio,  corresponding to a one-unit increase in exposure level.
+$$ \frac{ E(Y (x,M(x+1))|C)} {E(Y\ (x,M(x))|C) } $$
+
+# Mediation analysis - potential outcome
+
+- expanding the data along unobserved $(x, x^*)$ combinations
+
+![ ]("C:/Users/janne.pitkaniemi/Documents/GitHub/TRE-EPI-R-2020/Mediation2.png")
+
+# Mediation analysis - potential outcome
+
+- imputation-based approach requires fitting a mean model
+for the outcome.
+
+$$ logit (Pr(Y = 1|X,M,C)) = \gamma_0 +\gamma_1X +\gamma_2M +\gamma_C,$$
+
+
+
+
+# Mediation analysis - potential outcome
+
+
+- $X$: dichotomized version of anxious attachment level (attbin).
+- $M$: negative affectivity (negaff) has been standardized 
+- $Y$: unwanted pursuit behavior (UPB),(=1) for the respondent has engaged in any unwanted pursuit behaviors
+
+\scriptsize
+```{r, echo=T,warning=FALSE,message=FALSE,comment=NA}
+impFit <- glm(UPB ~ factor(attbin) + negaff + gender + educ + age, family = binomial("logit"), data = UPBdata)
+expData <- neImpute(impFit)
+head(expData, 4)
+```
+\normalsize
+
+
+# Mediation analysis
+
+\scriptsize
+```{r,echo=T,warning=FALSE,message=FALSE,comment=NA }
+neMod1 <- neModel(UPB ~ attbin0 + attbin1 + gender + educ + age,
+                  family = binomial("logit"), expData = expData, se = "robust")
+summary(neMod1)
+
+```
+\normalsize
+
+# Mediation analysis - results
+
+- **Natural Direct effect:** for a subject with baseline covariate levels C, altering the level of anxious attachment from low (=0) to high (=1), while controlling negative affectivity at levels as naturally observed at any given level of anxious attachment x, increases the odds of displaying unwanted pursuit behaviors with a factor
+
+```{r,comment=NA}
+ci.exp(neMod1)[2,]
+```
+
+- **Natural indirect effect**: Altering levels of negative affectivity as observed at low anxious attachment scores to levels that would have been observed at high anxious attachment scores, while controlling their anxious attachment score at any given level x, increases the odds of displaying unwanted pursuit behaviors with a factor
+
+```{r, comment=NA}
+ci.exp(neMod1)[3,]
+```
+
 
 # Survival model with long term survivors
 
@@ -51,10 +319,13 @@ as well as proportional hazards
 
 # Survival model with long term survivors
 
-
+\scriptsize
 ```{r,echo=T,warning=FALSE,message=FALSE,comment=NA, fig.height=4.5}
-library(smcure); library(survival) 
-data("e1684"); attach(e1684); head(e1684)
+library(smcure); 
+library(survival) 
+data("e1684"); 
+attach(e1684); 
+head(e1684)
 
 #Kaplan Meier estimate of S,CDF
 fit <- survfit(Surv(FAILTIME,FAILCENS)~TRT,data = e1684)
@@ -66,6 +337,7 @@ res<-printsmcure(pd,Var = FALSE)
 
 
 ```
+\normalsize
 # Survival model with long term survivors
 \scriptsize
 ```{r,echo=FALSE,warning=FALSE,message=FALSE,comment=NA, fig.height=4.5}
@@ -75,7 +347,19 @@ printsmcure(pd,Var = FALSE)
 
 # Survival model with long term survivors
 
-```{r,echo=FALSE,warning=FALSE,message=FALSE,comment=NA, fig.height=4.5}
+```{r,echo=T,warning=FALSE,message=FALSE,comment=NA, fig.height=4.5}
+# extract suscceptible proportions
+lp1<-coef(res$logistfit)[1]
+lp2<-sum(coef(res$logistfit))
+p1<-exp(lp1)/(1+exp(lp1))
+p2<-exp(lp2)/(1+exp(lp2))
+
+
+```
+
+# Survival model with long term survivors
+
+```{r,echo=F,warning=FALSE,message=FALSE,comment=NA, fig.height=4.5}
 # extract suscceptible proportions
 lp1<-coef(res$logistfit)[1]
 lp2<-sum(coef(res$logistfit))
@@ -90,5 +374,4 @@ abline(h=p2,lty=2)
 - Proportion of immunes in TRT==0 is `r 1-p1`
 - Proportion of immunes in TRT==1 is `r 1-p2`
 - HR for TRT==1 vs TRT==0 for non-immunes is `r exp(res$beta)`
-
 
