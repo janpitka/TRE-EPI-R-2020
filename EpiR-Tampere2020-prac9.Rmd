@@ -132,7 +132,7 @@ st.rel <- survtab(
 #summary(st.rel,t=c(1,5,10,15))
 ```
 
-
+By default, ``survtab`` function uses the Ederer II estimator for relative survival.
 
 
 ## Cause-specific survival (event = death from rectal cancer)
@@ -179,11 +179,17 @@ w <- list(agegr = ICSS1$ICSS1)
 st.rel <- survtab(
   Surv(time = FUT, event = lex.Xst%in%c("canD", "othD")) 
   ~ sex + period + adjust(agegr), 
-  data = Lex,pophaz = pm,
-  surv.type = "surv.rel",breaks = BL, weights=w)
+  data = Lex,pophaz = pm,surv.type = "surv.rel",
+  relsurv.method = "pp",breaks = BL, weights=w)
 summary(st.rel,t=c(1,5,10,15))
 ```
 
+``summary`` prints estimates at given time points: at 1, 5, 10 and 15 years after diagnosis (column ``Tstop``). Column ``surv.int`` shows the follow-up time interval (monthly intervals were defined in ``breaks``):
+at the end of 12th follow-up time interval ``Tstop=1`` (1-year survival). The length of the intervals is ``delta`` in years. Notice that ``d``, ``pyrs`` and ``d.exp`` are the number of deaths, person-years and the expected number of deaths within a monthly interval only, e.g. from 11 to <12 months (``surv.int=12``). The Pohar Perme estimator is based on the weighted observations ``d.pp``, ``pyrs.pp`` and ``d.exp.pp``.
+
+The age-standardised survival estimates (both overall survival ``surv.obs.as`` and relative survival ``r.pp.as`` (based on the Pohar Perme estimator) with 95% confidence intervals and standard errors were calculated for the two periods.
+
+Plot the age-standardised relative survival curves in patients diagnosed in 1993-2002 and in 2003-2012:
 
 ```{r p9_9, echo=T, message=FALSE, results='hide'}
 plot(st.rel[st.rel$period=="[1993,2003)",])
